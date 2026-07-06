@@ -8,6 +8,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // Dynamic imports for Three.js to avoid SSR issues
 const Scene3DSmall = dynamic(() => import('./Scene3DSmall').then(mod => ({ default: mod.Scene3DSmall })), { ssr: false });
+const DottedSurface = dynamic(() => import('@/components/ui/dotted-surface').then(mod => ({ default: mod.DottedSurface })), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -772,6 +773,7 @@ export default function Home() {
     <>
       <Preloader onComplete={handlePreloaderComplete} />
       <CustomCursor />
+      <DottedSurface />
       <div className="noise-overlay" />
       <Navigation activeSection={activeSection} />
       <MobileNav />

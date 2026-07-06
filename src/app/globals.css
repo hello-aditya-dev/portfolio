@@ -200,8 +200,6 @@
 .card-glow-vibrant {
   position: relative;
   overflow: hidden;
-  transform-style: preserve-3d;
-  will-change: transform;
 }
 .card-glow-vibrant::before {
   content: '';
