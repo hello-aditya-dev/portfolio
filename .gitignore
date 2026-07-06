@@ -55,6 +55,7 @@ server.log
 *.png
 *.json
 worklog.md
+worklog_temp.md
 scripts/
 reference-*
 current-*
@@ -66,3 +67,9 @@ skills/
 tool-results/
 *.txt
 upload/
+
+# database files
+db/*.db
+db/*.db-journal
+db/*.db-wal
+db/*.db-shm

@@ -46,7 +46,7 @@ src/
 
 ```bash
 # Clone the repository
-git clone https://github.com/witejackel-eng/portfolio.git
+git clone https://github.com/hello-aditya-dev/portfolio.git
 cd portfolio
 
 # Install dependencies
