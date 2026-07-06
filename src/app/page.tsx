@@ -26,6 +26,7 @@ const PROJECTS = [
     gradient: 'from-blue-600/20 via-indigo-600/10 to-purple-600/20',
     accentGlow: '#4f46e5',
     abstractBg: 'radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%)',
+    image: '/project-1.jpg',
   },
   {
     id: 2,
@@ -38,6 +39,7 @@ const PROJECTS = [
     gradient: 'from-red-500/20 via-orange-500/10 to-amber-500/20',
     accentGlow: '#ef4444',
     abstractBg: 'radial-gradient(ellipse at 70% 40%, rgba(239,68,68,0.15) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(249,115,22,0.1) 0%, transparent 50%)',
+    image: '/project-2.jpg',
   },
   {
     id: 3,
@@ -50,6 +52,7 @@ const PROJECTS = [
     gradient: 'from-teal-500/20 via-emerald-500/10 to-cyan-500/20',
     accentGlow: '#14b8a6',
     abstractBg: 'radial-gradient(ellipse at 40% 60%, rgba(20,184,166,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(6,182,212,0.1) 0%, transparent 50%)',
+    image: '/project-3.jpg',
   },
   {
     id: 4,
@@ -62,6 +65,7 @@ const PROJECTS = [
     gradient: 'from-purple-500/20 via-violet-500/10 to-fuchsia-500/20',
     accentGlow: '#a855f7',
     abstractBg: 'radial-gradient(ellipse at 60% 30%, rgba(168,85,247,0.15) 0%, transparent 60%), radial-gradient(ellipse at 20% 70%, rgba(217,70,239,0.1) 0%, transparent 50%)',
+    image: '/project-4.jpg',
   },
 ];
 
@@ -234,53 +238,49 @@ function HeroSection() {
   useMagneticHover(ctaRef, 0.2);
 
   return (
-    <section ref={heroRef} id="hero" className="relative grid-bg flex min-h-screen items-center overflow-hidden px-6 md:px-12 lg:px-16">
-      {/* Warm flame ambient glow - bigger for ferocious flame */}
-      <div className="pointer-events-none absolute top-1/3 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,80,0,0.12)_0%,rgba(255,50,0,0.05)_30%,transparent_65%)]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,100,0,0.06)_0%,transparent_55%)]" />
+    <section ref={heroRef} id="hero" className="relative flex min-h-screen items-center overflow-hidden">
+      {/* Full-width 3D Canvas behind everything */}
+      <div className="hero-3d absolute inset-0 z-0 opacity-0">
+        <Suspense fallback={null}>
+          <Scene3D />
+        </Suspense>
+      </div>
 
-      <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl">
-        <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr] lg:gap-16">
+      {/* Desert sand ambient glow */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(196,162,101,0.06)_0%,rgba(139,105,20,0.03)_35%,transparent_65%)]" />
+
+      {/* Content overlay */}
+      <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-16">
+        <div className="grid items-center gap-8 lg:grid-cols-[1fr_1fr] lg:gap-16">
 
           {/* LEFT COLUMN */}
-          <div className="hero-left opacity-0 order-2 lg:order-1 text-center lg:text-left">
-            <div className="hero-role opacity-0 mb-4 inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/[0.06] px-4 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-orange-400 animate-pulse" />
-              <span className="font-mono text-[11px] uppercase tracking-wider text-orange-300/80">Available for Projects</span>
+          <div className="hero-left opacity-0 text-center lg:text-left">
+            <div className="hero-role opacity-0 mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] px-4 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-300/80">Available for Projects</span>
             </div>
-            <p className="text-sm leading-relaxed text-white/45 md:text-base max-w-sm mx-auto lg:mx-0">
-              I craft <span className="text-orange-300/90">high-performance</span> digital interfaces and immersive web experiences that leave a lasting impression.
+            <p className="text-sm leading-relaxed text-white/45 md:text-base max-w-md mx-auto lg:mx-0">
+              I craft <span className="text-amber-300/90">high-performance</span> digital interfaces and immersive 3D web experiences that leave a lasting impression.
             </p>
             <div className="mt-8">
-              <a ref={ctaRef} href="#work" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }} className="magnetic-hover inline-flex items-center gap-3 rounded-full border border-orange-500/20 bg-orange-500/[0.06] px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] text-orange-200/90 backdrop-blur-sm transition-all duration-300 hover:border-orange-400/40 hover:bg-orange-500/[0.12] hover:shadow-[0_0_30px_rgba(255,106,0,0.15)]">
+              <a ref={ctaRef} href="#work" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }} className="magnetic-hover inline-flex items-center gap-3 rounded-full border border-amber-500/20 bg-amber-500/[0.06] px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] text-amber-200/90 backdrop-blur-sm transition-all duration-300 hover:border-amber-400/40 hover:bg-amber-500/[0.12] hover:shadow-[0_0_30px_rgba(196,162,101,0.15)]">
                 <span>Discover My Projects</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M17 7H7M17 7V17" /></svg>
               </a>
             </div>
           </div>
 
-          {/* CENTER - 3D FLAME + NAME */}
-          <div className="hero-3d opacity-0 order-1 lg:order-2 flex flex-col items-center relative">
-            <div className="relative h-[400px] w-[340px] md:h-[540px] md:w-[460px] lg:h-[600px] lg:w-[500px]">
-              <div className="absolute inset-0">
-                <Suspense fallback={null}>
-                  <Scene3D />
-                </Suspense>
-              </div>
-            </div>
-            <h1 className="hero-name absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-[clamp(3.5rem,9vw,8rem)] font-bold leading-[0.85] tracking-tighter text-center pointer-events-none select-none" style={{ opacity: 0, mixBlendMode: 'difference' }}>
-              <span className="gradient-text-flame">ADITYA</span>
+          {/* RIGHT COLUMN - Name + Links */}
+          <div className="hero-right opacity-0 text-center lg:text-right">
+            <h1 className="hero-name text-[clamp(3rem,7vw,6.5rem)] font-bold leading-[0.85] tracking-tighter pointer-events-none select-none" style={{ opacity: 0 }}>
+              <span className="gradient-text-dune">ADITYA</span>
             </h1>
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="hero-right opacity-0 order-3 text-center lg:text-right">
-            <p className="text-sm leading-relaxed text-white/45 md:text-base max-w-sm mx-auto lg:ml-auto lg:mr-0">
-              Focused on <span className="text-orange-300/90">immersive experiences</span>, working remotely from India. Turning ideas into interactive reality.
+            <p className="mt-6 text-sm leading-relaxed text-white/40 md:text-base max-w-sm mx-auto lg:ml-auto lg:mr-0">
+              Focused on <span className="text-amber-300/80">immersive experiences</span>, working remotely from India. Turning ideas into interactive reality.
             </p>
-            <div className="mt-8 flex flex-col gap-3 items-center lg:items-end">
-              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-orange-300/80 transition-colors">GitHub ↗</a>
-              <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-orange-300/80 transition-colors">Email ↗</a>
+            <div className="mt-6 flex flex-col gap-3 items-center lg:items-end">
+              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-amber-300/80 transition-colors">GitHub ↗</a>
+              <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-amber-300/80 transition-colors">Email ↗</a>
             </div>
           </div>
         </div>
@@ -289,7 +289,7 @@ function HeroSection() {
       {/* Scroll indicator */}
       <div className="hero-scroll absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" style={{ opacity: 0 }}>
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/15">Scroll</span>
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} className="h-8 w-px bg-gradient-to-b from-orange-400/30 to-transparent" />
+        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} className="h-8 w-px bg-gradient-to-b from-amber-400/30 to-transparent" />
       </div>
     </section>
   );
@@ -538,73 +538,34 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
               </div>
             </div>
 
-            {/* RIGHT - Vibrant abstract mockup */}
+            {/* RIGHT - Real project screenshot in laptop mockup */}
             <div className="relative hidden md:flex items-center justify-center p-8 overflow-hidden">
               <motion.div
                 className="laptop-mockup-vibrant w-full max-w-sm aspect-video relative rounded-lg overflow-hidden border border-white/[0.08]"
-                whileHover={{ scale: 1.02, y: -4 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
+                whileHover={{ scale: 1.03, y: -6 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
               >
                 {/* Browser chrome */}
-                <div className="h-7 bg-white/[0.04] border-b border-white/[0.06] flex items-center gap-1.5 px-3">
+                <div className="h-7 bg-white/[0.04] border-b border-white/[0.06] flex items-center gap-1.5 px-3 relative z-10">
                   <span className="h-2 w-2 rounded-full" style={{ background: project.color }} />
                   <span className="h-2 w-2 rounded-full bg-white/15" />
                   <span className="h-2 w-2 rounded-full bg-white/15" />
                   <div className="ml-3 h-3 w-24 rounded bg-white/[0.06]" />
                 </div>
-                {/* Screen content with abstract visuals */}
-                <div className="relative bg-[#080810] p-4 h-[calc(100%-28px)] overflow-hidden">
-                  {/* Abstract background */}
-                  <div className="absolute inset-0 opacity-40" style={{ background: project.abstractBg }} />
-
-                  {/* Animated abstract shapes */}
-                  <motion.div
-                    className="absolute top-4 right-4 h-16 w-16 rounded-full opacity-20 blur-sm"
-                    style={{ background: project.color }}
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.35, 0.2] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                {/* Screenshot */}
+                <div className="relative h-[calc(100%-28px)] overflow-hidden bg-[#0a0a0a]">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover object-top"
+                    loading="lazy"
                   />
-                  <motion.div
-                    className="absolute bottom-4 left-4 h-12 w-12 rounded-lg opacity-15 blur-sm"
-                    style={{ background: project.color }}
-                    animate={{ rotate: [0, 90, 0], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-32 rounded-full opacity-10 blur-md"
-                    style={{ background: project.color }}
-                    animate={{ x: [-10, 10, -10], y: [-5, 5, -5] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-
-                  {/* Mock UI elements */}
-                  <div className="relative grid grid-cols-3 gap-2 h-full">
-                    <div className="col-span-1 space-y-2">
-                      <div className="h-2 w-12 rounded bg-white/[0.08]" />
-                      <div className="h-2 w-8 rounded bg-white/[0.05]" />
-                      <div className="h-2 w-10 rounded bg-white/[0.06]" />
-                      <div className="mt-4 h-8 w-full rounded-md" style={{ background: `${project.color}15` }} />
-                      <div className="h-8 w-full rounded-md bg-white/[0.04]" />
-                      <div className="h-8 w-full rounded-md bg-white/[0.04]" />
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <div className="h-3 w-20 rounded bg-white/[0.08]" />
-                      <div className="h-2 w-full rounded bg-white/[0.04]" />
-                      <div className="h-2 w-3/4 rounded bg-white/[0.04]" />
-                      <div className="mt-3 h-16 w-full rounded-md border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
-                        <div className="h-1 w-12 rounded" style={{ background: `${project.color}30` }} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="h-10 rounded-md" style={{ background: `${project.color}10` }} />
-                        <div className="h-10 rounded-md bg-white/[0.03]" />
-                      </div>
-                    </div>
+                  {/* Subtle color overlay for cohesion */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/60 via-transparent to-transparent" />
+                  {/* Glow on hover */}
+                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                    <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 80px ${project.accentGlow}20` }} />
                   </div>
-                </div>
-
-                {/* Glow effect on hover */}
-                <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 60px ${project.accentGlow}15` }} />
                 </div>
               </motion.div>
             </div>

@@ -51,7 +51,7 @@
   }
 
   ::selection {
-    background: rgba(255, 106, 0, 0.3);
+    background: rgba(196, 162, 101, 0.3);
     color: #fff;
   }
 }
@@ -183,6 +183,14 @@
 /* Flame gradient text for hero */
 .gradient-text-flame {
   background: linear-gradient(180deg, #fffae6 0%, #ff8c00 40%, #ff4500 80%, rgba(255,69,0,0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Dune sand gradient text */
+.gradient-text-dune {
+  background: linear-gradient(135deg, #ffd4a0 0%, #c4a265 35%, #8b6914 70%, rgba(139,105,20,0.6) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

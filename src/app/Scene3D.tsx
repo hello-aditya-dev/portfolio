@@ -2,17 +2,10 @@
 
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 
-/* ──────────────── FLAME SHADERS ──────────────── */
-const flameVertexShader = `
-  uniform float uTime;
-  uniform float uDistortion;
-  uniform float uSpeed;
-  varying vec2 vUv;
-  varying float vElevation;
-
+/* ──────────────── SIMPLE NOISE (shared) ──────────────── */
+const noiseGLSL = `
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -60,131 +53,201 @@ const flameVertexShader = `
     m = m * m;
     return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
   }
+`;
+
+/* ──────────────── SANDWORM VERTEX SHADER ──────────────── */
+const wormVertexShader = `
+  uniform float uTime;
+  uniform float uWormSpeed;
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+  varying float vFresnel;
+
+  ${noiseGLSL}
 
   void main() {
     vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+
     vec3 pos = position;
-    float heightFactor = uv.y;
-    float taper = 1.0 - pow(heightFactor, 0.5) * 0.8;
-    float noiseFreq = 3.0;
-    float noise1 = snoise(vec3(pos.x * noiseFreq, pos.y * noiseFreq * 0.8, uTime * uSpeed)) * uDistortion;
-    float noise2 = snoise(vec3(pos.x * noiseFreq * 2.0, pos.y * noiseFreq * 1.5, uTime * uSpeed * 1.3)) * uDistortion * 0.6;
-    float noise3 = snoise(vec3(pos.x * noiseFreq * 4.0, pos.y * noiseFreq * 2.0, uTime * uSpeed * 1.8)) * uDistortion * 0.25;
-    float swirl = sin(heightFactor * 3.14159 + uTime * uSpeed * 0.7) * 0.3 * heightFactor;
-    float turbulence = sin(heightFactor * 12.0 + uTime * uSpeed * 3.0) * 0.08 * heightFactor * heightFactor;
-    float displacement = (noise1 + noise2 + noise3) * taper;
-    pos.x += displacement + swirl + turbulence;
-    pos.z += (noise1 * 0.8 + noise2 * 0.5 + noise3 * 0.3) * taper;
-    pos.y += heightFactor * heightFactor * 0.5;
-    vElevation = pos.y;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+
+    // Ring segments: the worm body
+    float ring = uv.x;        // 0 = tail, 1 = head
+    float around = uv.y;      // 0-1 around the circumference
+
+    // Worm body profile: thick in middle, tapered at ends
+    float bodyRadius = sin(ring * 3.14159);
+    bodyRadius = pow(bodyRadius, 0.6); // more uniform thickness
+
+    // Ring segment bumps (like the Dune worm's crystalline segments)
+    float segments = sin(ring * 80.0) * 0.04 * bodyRadius;
+    segments += sin(ring * 120.0 + 1.5) * 0.02 * bodyRadius;
+
+    // Undulating wave motion along the body
+    float wave1 = sin(ring * 6.28318 * 2.0 - uTime * uWormSpeed) * 0.6 * bodyRadius;
+    float wave2 = sin(ring * 6.28318 * 3.5 - uTime * uWormSpeed * 1.3) * 0.3 * bodyRadius;
+    float wave3 = sin(ring * 6.28318 * 1.0 - uTime * uWormSpeed * 0.7 + 2.0) * 0.8 * bodyRadius;
+
+    // Apply radius to the ring position
+    float angle = around * 6.28318;
+    float px = cos(angle) * bodyRadius;
+    float py = sin(angle) * bodyRadius;
+
+    // Add segment bumps radially
+    float bumpDir = 1.0 + segments;
+    px *= bumpDir;
+    py *= bumpDir;
+
+    // The worm travels in a large sinusoidal path in XZ
+    // ring=0 is tail, ring=1 is head
+    float pathX = (ring - 0.5) * 18.0;
+    float pathY = wave1 + wave2 * 0.5;
+    float pathZ = wave3 + sin(ring * 4.0 - uTime * uWormSpeed * 0.5) * 0.5;
+
+    // Mouth opening at the head
+    float mouthOpen = 0.0;
+    if (ring > 0.92) {
+      mouthOpen = (ring - 0.92) / 0.08;
+      float innerRadius = bodyRadius * (1.0 - mouthOpen * 0.6);
+      float innerAngle = angle;
+      px = cos(innerAngle) * innerRadius;
+      py = sin(innerAngle) * innerRadius;
+      // Jaw split - upper and lower jaw
+      float jawSplit = sin(angle) * mouthOpen * 0.4 * bodyRadius;
+      py += jawSplit;
+    }
+
+    pos = vec3(pathX + px, pathY + py, pathZ);
+
+    // Slight per-vertex noise for organic feel
+    float vertNoise = snoise(vec3(ring * 5.0, around * 3.0, uTime * 2.0)) * 0.06 * bodyRadius;
+    pos += normalize(vec3(px, py, 0.0)) * vertNoise;
+
+    vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+    vWorldPos = worldPos.xyz;
+
+    // Fresnel for edge glow
+    vec3 viewDir = normalize(cameraPosition - worldPos.xyz);
+    vFresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 3.0);
+
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
   }
 `;
 
-const flameFragmentShader = `
+/* ──────────────── SANDWORM FRAGMENT SHADER ──────────────── */
+const wormFragmentShader = `
   uniform float uTime;
-  uniform vec3 uColor1;
-  uniform vec3 uColor2;
-  uniform vec3 uColor3;
   varying vec2 vUv;
-  varying float vElevation;
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+  varying float vFresnel;
 
   void main() {
-    float h = clamp(vUv.y, 0.0, 1.0);
-    float core = smoothstep(0.0, 0.4, h) * (1.0 - smoothstep(0.6, 1.0, h));
-    vec3 color = mix(uColor1, uColor2, smoothstep(0.0, 0.4, h));
-    color = mix(color, uColor3, smoothstep(0.4, 0.95, h));
-    color += vec3(1.0, 0.98, 0.9) * core * 0.6;
-    float edgeFade = 1.0 - pow(abs(vUv.x - 0.5) * 2.0, 1.5);
-    edgeFade *= edgeFade;
-    float topFade = 1.0 - smoothstep(0.82, 1.0, h);
-    float bottomFade = smoothstep(0.0, 0.08, h);
-    float flicker = 0.8 + 0.2 * sin(uTime * 10.0 + vUv.y * 14.0) * sin(uTime * 7.3 + vUv.x * 8.0);
-    float alpha = edgeFade * topFade * bottomFade * flicker;
-    color *= 1.6;
-    gl_FragColor = vec4(color, alpha);
+    float ring = vUv.x;
+    float around = vUv.y;
+
+    // Base sand/desert color palette
+    vec3 deepDark = vec3(0.04, 0.02, 0.01);    // dark interior
+    vec3 baseSand = vec3(0.55, 0.35, 0.15);     // warm sand
+    vec3 lightSand = vec3(0.85, 0.65, 0.35);    // bright sand highlight
+    vec3 crystalBlue = vec3(0.15, 0.25, 0.4);   // Dune blue crystal accents
+    vec3 mouthGlow = vec3(0.9, 0.4, 0.1);       // orange mouth glow
+
+    // Body coloring based on ring position
+    float bodyColor = sin(ring * 3.14159);
+    vec3 color = mix(deepDark, baseSand, pow(bodyColor, 0.5));
+
+    // Segment ring pattern
+    float ringPattern = sin(ring * 80.0) * 0.5 + 0.5;
+    color = mix(color, lightSand, ringPattern * 0.15);
+
+    // Crystal/blue accent bands (like Dune worm's blue-ish hue)
+    float crystalBands = smoothstep(0.48, 0.5, fract(ring * 20.0)) * smoothstep(0.52, 0.5, fract(ring * 20.0));
+    color = mix(color, crystalBlue, crystalBands * 0.3);
+
+    // Belly (bottom of worm = lower half of circumference)
+    float belly = smoothstep(0.3, 0.7, sin(around * 6.28318));
+    color = mix(color * 0.6, color, belly);
+
+    // Top ridge highlights
+    float ridge = pow(max(sin(around * 6.28318), 0.0), 8.0);
+    color += lightSand * ridge * 0.3;
+
+    // Mouth interior glow
+    if (ring > 0.9) {
+      float mouthFactor = (ring - 0.9) / 0.1;
+      color = mix(color, mouthGlow, mouthFactor * 0.8);
+      // Teeth-like bright edges
+      float teeth = sin(around * 40.0) * 0.5 + 0.5;
+      color = mix(color, vec3(0.95, 0.9, 0.7), teeth * mouthFactor * 0.5);
+    }
+
+    // Fresnel edge glow (subtle blue rim like in the movie)
+    color += vec3(0.1, 0.2, 0.35) * vFresnel * 0.6;
+
+    // Pulsing bioluminescent veins
+    float veins = sin(ring * 60.0 + around * 20.0) * sin(ring * 30.0 - uTime * 3.0);
+    veins = smoothstep(0.7, 0.9, veins);
+    color += vec3(0.3, 0.5, 0.8) * veins * 0.15;
+
+    // Simple lighting
+    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
+    float diff = max(dot(vNormal, lightDir), 0.0);
+    color *= 0.4 + diff * 0.6;
+
+    // Specular highlight
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(vNormal, halfDir), 0.0), 32.0);
+    color += vec3(1.0, 0.9, 0.7) * spec * 0.3;
+
+    // Slight shimmer
+    float shimmer = sin(ring * 200.0 + uTime * 5.0) * 0.03;
+    color += shimmer;
+
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-/* ──────────────── FLAME MESH ──────────────── */
-function FlameMesh() {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const materialRef = useRef<THREE.ShaderMaterial>(null!);
-
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uDistortion: { value: 0.4 },
-    uSpeed: { value: 2.2 },
-    uColor1: { value: new THREE.Color('#cc2200') },
-    uColor2: { value: new THREE.Color('#ff6600') },
-    uColor3: { value: new THREE.Color('#fff4cc') },
-  }), []);
-
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
-    }
-    if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.15;
-      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.7) * 0.05;
-    }
-  });
-
-  return (
-    <Float speed={1.8} rotationIntensity={0.15} floatIntensity={0.6}>
-      <mesh ref={meshRef} scale={3.2}>
-        <coneGeometry args={[1.1, 4, 48, 96, true]} />
-        <shaderMaterial
-          ref={materialRef}
-          vertexShader={flameVertexShader}
-          fragmentShader={flameFragmentShader}
-          uniforms={uniforms}
-          transparent
-          side={THREE.DoubleSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-    </Float>
-  );
-}
-
-/* ──────────────── FLAME PARTICLES ──────────────── */
-function FlameParticles() {
+/* ──────────────── SAND DUST PARTICLES ──────────────── */
+function SandParticles() {
   const pointsRef = useRef<THREE.Points>(null!);
-  const count = 200;
+  const count = 300;
 
-  const positions = useMemo(() => {
+  const [positions, velocities] = useMemo(() => {
     const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 2.0;
-      pos[i * 3 + 1] = Math.random() * 6 - 2.0;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
+      pos[i * 3] = (Math.random() - 0.5) * 24;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 6;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 6;
+      vel[i * 3] = (Math.random() - 0.5) * 0.01;
+      vel[i * 3 + 1] = Math.random() * 0.005 + 0.002;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
     }
-    return pos;
-  }, []);
-
-  const speeds = useMemo(() => {
-    return Array.from({ length: count }, () => 0.4 + Math.random() * 1.2);
-  }, []);
-
-  const sizes = useMemo(() => {
-    return Array.from({ length: count }, () => 0.02 + Math.random() * 0.06);
+    return [pos, vel];
   }, []);
 
   useFrame((state) => {
     if (!pointsRef.current) return;
-    const posArray = pointsRef.current.geometry.attributes.position.array as Float32Array;
+    const posArr = pointsRef.current.geometry.attributes.position.array as Float32Array;
     const time = state.clock.elapsedTime;
+
     for (let i = 0; i < count; i++) {
-      posArray[i * 3 + 1] += speeds[i] * 0.03;
-      if (posArray[i * 3 + 1] > 5) {
-        posArray[i * 3 + 1] = -2.0;
-        posArray[i * 3] = (Math.random() - 0.5) * 1.2;
-        posArray[i * 3 + 2] = (Math.random() - 0.5) * 1.2;
+      const i3 = i * 3;
+      posArr[i3] += velocities[i3] + Math.sin(time + i * 0.1) * 0.003;
+      posArr[i3 + 1] += velocities[i3 + 1];
+      posArr[i3 + 2] += velocities[i3 + 2] + Math.cos(time * 0.8 + i * 0.2) * 0.002;
+
+      // Reset if out of bounds
+      if (posArr[i3 + 1] > 4) {
+        posArr[i3] = (Math.random() - 0.5) * 24;
+        posArr[i3 + 1] = -3;
+        posArr[i3 + 2] = (Math.random() - 0.5) * 6;
       }
-      posArray[i * 3] += Math.sin(time * 3 + i * 0.5) * 0.004;
-      posArray[i * 3 + 2] += Math.cos(time * 2.5 + i * 0.7) * 0.003;
+      // Wave-like drift following the worm
+      posArr[i3] += Math.sin(time * 0.5 + posArr[i3 + 1] * 0.5) * 0.002;
     }
     pointsRef.current.geometry.attributes.position.needsUpdate = true;
   });
@@ -192,23 +255,57 @@ function FlameParticles() {
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.06}
-        color="#ff5500"
+        size={0.035}
+        color="#c4a265"
         transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
+        opacity={0.5}
         sizeAttenuation
+        depthWrite={false}
       />
     </points>
+  );
+}
+
+/* ──────────────── SANDWORM MESH ──────────────── */
+function SandwormMesh() {
+  const groupRef = useRef<THREE.Group>(null!);
+  const materialRef = useRef<THREE.ShaderMaterial>(null!);
+
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uWormSpeed: { value: 1.8 },
+  }), []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = t;
+    }
+    if (groupRef.current) {
+      // Gentle bob
+      groupRef.current.position.y = Math.sin(t * 0.4) * 0.15;
+      // Very slow overall rotation so it's seen from different angles
+      groupRef.current.rotation.y = Math.sin(t * 0.15) * 0.2;
+      groupRef.current.rotation.x = Math.sin(t * 0.1) * 0.05;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh>
+        <cylinderGeometry args={[1, 1, 18, 32, 200, true]} />
+        <shaderMaterial
+          ref={materialRef}
+          vertexShader={wormVertexShader}
+          fragmentShader={wormFragmentShader}
+          uniforms={uniforms}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -216,16 +313,21 @@ function FlameParticles() {
 export function Scene3D() {
   return (
     <Canvas
-      camera={{ position: [0, 0.8, 5.5], fov: 50 }}
+      camera={{ position: [0, 3, 10], fov: 55 }}
       style={{ background: 'transparent' }}
       gl={{ alpha: true, antialias: true }}
     >
-      <ambientLight intensity={0.15} />
-      <pointLight position={[0, 3, 3]} intensity={2.5} color="#ff6a00" distance={12} />
-      <pointLight position={[0, -1, 2]} intensity={1.0} color="#ff3300" distance={10} />
-      <pointLight position={[1, 1, 2]} intensity={0.8} color="#ff8800" distance={8} />
-      <FlameMesh />
-      <FlameParticles />
+      {/* Fog for depth */}
+      <fog attach="fog" args={['#000000', 8, 25]} />
+
+      {/* Desert-like warm lighting */}
+      <ambientLight intensity={0.25} color="#c4a265" />
+      <directionalLight position={[5, 8, 5]} intensity={0.8} color="#ffd4a0" />
+      <pointLight position={[-3, 2, 4]} intensity={0.6} color="#ff8844" distance={15} />
+      <pointLight position={[5, -1, 3]} intensity={0.4} color="#aa6633" distance={12} />
+
+      <SandwormMesh />
+      <SandParticles />
     </Canvas>
   );
 }
