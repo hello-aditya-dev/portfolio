@@ -483,22 +483,13 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
                 </div>
               </div>
 
-              {/* Screen content — iframe + screenshot fallback */}
+              {/* Screen content — project screenshot */}
               <div className="relative bg-[#000]" style={{ height: '200px' }}>
-                {/* Screenshot as fallback / loading placeholder */}
                 <img
                   src={project.image}
                   alt={project.title}
                   className="absolute inset-0 w-full h-full object-cover object-top"
                   loading="lazy"
-                />
-                {/* Live iframe on top */}
-                <iframe
-                  src={project.link}
-                  className="absolute inset-0 w-full h-full border-0"
-                  loading="lazy"
-                  sandbox="allow-scripts allow-same-origin allow-popups"
-                  title={project.title}
                 />
                 {/* Bottom fade to blend into card */}
                 <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none z-10" />
@@ -706,14 +697,14 @@ function Footer() {
           <div className="flex flex-col items-center md:items-end gap-6">
             <div className="relative w-full max-w-xs">
               <div className="laptop-mockup aspect-video relative">
-                <div className="absolute inset-1.5 rounded bg-[#050505] overflow-hidden flex items-center justify-center relative">
+                <div className="absolute inset-1.5 rounded bg-[#080808] overflow-hidden flex items-center justify-center relative">
                   {/* Mini black hole visual */}
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                    <div className="h-8 w-8 rounded-full bg-black border border-amber-500/20" />
-                    <div className="absolute h-12 w-12 rounded-full border border-amber-500/10 rotate-45" />
-                    <div className="absolute h-16 w-6 rounded-full bg-gradient-to-r from-transparent via-amber-500/15 to-transparent blur-sm" />
+                    <div className="h-8 w-8 rounded-full bg-black border border-white/10" />
+                    <div className="absolute h-12 w-12 rounded-full border border-white/[0.06] rotate-45" />
+                    <div className="absolute h-16 w-6 rounded-full bg-gradient-to-r from-transparent via-white/8 to-transparent blur-sm" />
                   </div>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/15 relative z-10">Portfolio Preview</span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/30 relative z-10">Portfolio Preview</span>
                 </div>
               </div>
             </div>
@@ -777,7 +768,7 @@ export default function Home() {
       <div className="noise-overlay" />
       <Navigation activeSection={activeSection} />
       <MobileNav />
-      <main className={loaded ? '' : 'overflow-hidden'}>
+      <main className={loaded ? 'relative z-10' : 'overflow-hidden relative z-10'}>
         <HeroSection />
         <MarqueeDivider />
         <AboutSection />
