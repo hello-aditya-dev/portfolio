@@ -51,7 +51,7 @@
   }
 
   ::selection {
-    background: rgba(110, 123, 255, 0.3);
+    background: rgba(255, 106, 0, 0.3);
     color: #fff;
   }
 }
@@ -178,4 +178,59 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Flame gradient text for hero */
+.gradient-text-flame {
+  background: linear-gradient(180deg, #fffae6 0%, #ff8c00 40%, #ff4500 80%, rgba(255,69,0,0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Vibrant card glow - uses CSS custom property --card-color */
+.card-glow-vibrant {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.card-glow-vibrant::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), color-mix(in srgb, var(--card-color, #6e7bff) 12%, transparent), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 0;
+}
+.card-glow-vibrant:hover::before {
+  opacity: 1;
+}
+.card-glow-vibrant:hover {
+  border-color: color-mix(in srgb, var(--card-color, #6e7bff) 25%, transparent);
+}
+
+/* Vibrant laptop mockup */
+.laptop-mockup-vibrant {
+  position: relative;
+  background: #111118;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.laptop-mockup-vibrant::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: -6px;
+  right: -6px;
+  height: 10px;
+  background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+  border-radius: 0 0 5px 5px;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-top: none;
 }

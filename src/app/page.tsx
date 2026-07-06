@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshDistortMaterial } from '@react-three/drei';
-import * as THREE from 'three';
+
+// Dynamic imports for Three.js to avoid SSR issues
+const Canvas = dynamic(() => import('@react-three/fiber').then(mod => ({ default: mod.Canvas })), { ssr: false });
+const Scene3D = dynamic(() => import('./Scene3D').then(mod => ({ default: mod.Scene3D })), { ssr: false });
+const Scene3DSmall = dynamic(() => import('./Scene3DSmall').then(mod => ({ default: mod.Scene3DSmall })), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,6 +23,9 @@ const PROJECTS = [
     tech: ['NEXT.JS', 'TYPESCRIPT', 'TAILWIND CSS'],
     link: 'https://ibs-com-aadi.vercel.app/',
     color: '#6e7bff',
+    gradient: 'from-blue-600/20 via-indigo-600/10 to-purple-600/20',
+    accentGlow: '#4f46e5',
+    abstractBg: 'radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%)',
   },
   {
     id: 2,
@@ -29,6 +35,9 @@ const PROJECTS = [
     tech: ['REACT', 'NEXT.JS', 'FRAMER MOTION'],
     link: 'https://corporate-leadgen-platform-jet.vercel.app/',
     color: '#ff6b6b',
+    gradient: 'from-red-500/20 via-orange-500/10 to-amber-500/20',
+    accentGlow: '#ef4444',
+    abstractBg: 'radial-gradient(ellipse at 70% 40%, rgba(239,68,68,0.15) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(249,115,22,0.1) 0%, transparent 50%)',
   },
   {
     id: 3,
@@ -38,19 +47,25 @@ const PROJECTS = [
     tech: ['REACT', 'CSS ANIMATIONS', 'JAVASCRIPT'],
     link: 'https://aadi-card.vercel.app/',
     color: '#4ecdc4',
+    gradient: 'from-teal-500/20 via-emerald-500/10 to-cyan-500/20',
+    accentGlow: '#14b8a6',
+    abstractBg: 'radial-gradient(ellipse at 40% 60%, rgba(20,184,166,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(6,182,212,0.1) 0%, transparent 50%)',
   },
   {
     id: 4,
     title: 'Pulse Dashboard',
-    category: 'SaaS · Analytics',
-    description: 'A real-time analytics dashboard handling dense data — designed for legibility under load and built to stay smooth with live data streams.',
-    tech: ['NEXT.JS', 'REACT', 'WEBSOCKET'],
+    category: 'Dashboard · Analytics',
+    description: 'A real-time analytics dashboard with live data visualization, interactive charts, and a responsive design that works across all devices.',
+    tech: ['NEXT.JS', 'CHART.JS', 'TAILWIND CSS'],
     link: 'https://pulse-aadi-project.vercel.app/',
-    color: '#f7b731',
+    color: '#a855f7',
+    gradient: 'from-purple-500/20 via-violet-500/10 to-fuchsia-500/20',
+    accentGlow: '#a855f7',
+    abstractBg: 'radial-gradient(ellipse at 60% 30%, rgba(168,85,247,0.15) 0%, transparent 60%), radial-gradient(ellipse at 20% 70%, rgba(217,70,239,0.1) 0%, transparent 50%)',
   },
 ];
 
-const FRONTEND_TOOLS = ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'GSAP'];
+const FRONTEND_TOOLS = ['React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'GSAP', 'Three.js', 'WebGL'];
 const BACKEND_TOOLS = ['Node.js', 'Express', 'MongoDB', 'PostgreSQL', 'REST APIs'];
 
 /* ──────────────── HOOKS ──────────────── */
@@ -69,48 +84,6 @@ function useMagneticHover(ref: React.RefObject<HTMLElement | null>, strength = 0
     el.addEventListener('mouseleave', onLeave);
     return () => { el.removeEventListener('mousemove', onMove); el.removeEventListener('mouseleave', onLeave); };
   }, [ref, strength]);
-}
-
-/* ──────────────── 3D OBJECT ──────────────── */
-function AnimatedSphere() {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x = state.clock.elapsedTime * 0.15;
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.2;
-    }
-  });
-  return (
-    <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.6}>
-      <mesh ref={meshRef} scale={1.8}>
-        <icosahedronGeometry args={[1, 4]} />
-        <MeshDistortMaterial
-          color="#6e7bff"
-          roughness={0.2}
-          metalness={0.8}
-          distort={0.3}
-          speed={2}
-          transparent
-          opacity={0.6}
-        />
-      </mesh>
-    </Float>
-  );
-}
-
-function Scene3D() {
-  return (
-    <Canvas
-      camera={{ position: [0, 0, 5], fov: 45 }}
-      style={{ background: 'transparent' }}
-      gl={{ alpha: true, antialias: true }}
-    >
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 5, 5]} intensity={0.8} color="#6e7bff" />
-      <pointLight position={[-5, -5, 5]} intensity={0.4} color="#ff6b6b" />
-      <AnimatedSphere />
-    </Canvas>
-  );
 }
 
 /* ──────────────── PRELOADER ──────────────── */
@@ -135,7 +108,7 @@ function Preloader({ onComplete }: { onComplete: () => void }) {
       <div className="text-center">
         <span ref={counterRef} className="block font-mono text-6xl font-light tracking-widest text-white md:text-8xl">0</span>
         <div className="mt-4 h-px w-32 overflow-hidden bg-white/10 mx-auto">
-          <motion.div className="h-full bg-white/60" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 1.8, ease: 'easeInOut' }} />
+          <motion.div className="h-full bg-gradient-to-r from-orange-500/60 via-yellow-400/60 to-white/60" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 1.8, ease: 'easeInOut' }} />
         </div>
       </div>
     </div>
@@ -240,22 +213,16 @@ function HeroSection() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ delay: 2.0 });
-
-      // Left column - role text
-      tl.fromTo('.hero-left', { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' })
-        // Center - name
-        .fromTo('.hero-name', { y: 100, opacity: 0, skewY: 3 }, { y: 0, opacity: 1, skewY: 0, duration: 1.2, ease: 'power4.out' }, '-=0.4')
-        // 3D canvas fade
-        .fromTo('.hero-3d', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 1, ease: 'power3.out' }, '-=0.8')
-        // Right column
+      tl.fromTo('.hero-role', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' })
+        .fromTo('.hero-name', { y: 100, opacity: 0, skewY: 3 }, { y: 0, opacity: 1, skewY: 0, duration: 1.2, ease: 'power4.out' }, '-=0.3')
+        .fromTo('.hero-3d', { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 1.2, ease: 'power3.out' }, '-=0.9')
+        .fromTo('.hero-left', { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.8')
         .fromTo('.hero-right', { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6')
-        // Scroll indicator
         .fromTo('.hero-scroll', { opacity: 0 }, { opacity: 1, duration: 0.5 }, '-=0.2');
     }, heroRef);
     return () => ctx.revert();
   }, []);
 
-  // Parallax
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.to('.hero-parallax', { yPercent: 40, opacity: 0, ease: 'none', scrollTrigger: { trigger: heroRef.current, start: 'top top', end: 'bottom top', scrub: 1 } });
@@ -268,60 +235,61 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} id="hero" className="relative grid-bg flex min-h-screen items-center overflow-hidden px-6 md:px-12 lg:px-16">
-      {/* Gradient orb */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(110,123,255,0.06)_0%,transparent_60%)]" />
+      {/* Warm flame ambient glow */}
+      <div className="pointer-events-none absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,106,0,0.08)_0%,rgba(255,69,0,0.03)_40%,transparent_70%)]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,140,0,0.04)_0%,transparent_60%)]" />
 
       <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl">
-        <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr] lg:gap-12">
+        <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr] lg:gap-16">
 
           {/* LEFT COLUMN */}
           <div className="hero-left opacity-0 order-2 lg:order-1 text-center lg:text-left">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5">
-              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="font-mono text-[11px] uppercase tracking-wider text-white/50">Available for Projects</span>
+            <div className="hero-role opacity-0 mb-4 inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/[0.06] px-4 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-orange-400 animate-pulse" />
+              <span className="font-mono text-[11px] uppercase tracking-wider text-orange-300/80">Available for Projects</span>
             </div>
             <p className="text-sm leading-relaxed text-white/45 md:text-base max-w-sm mx-auto lg:mx-0">
-              I currently work as a <span className="text-white/80">Front-End Developer</span>, crafting high-performance digital interfaces and experiences.
+              I craft <span className="text-orange-300/90">high-performance</span> digital interfaces and immersive web experiences that leave a lasting impression.
             </p>
             <div className="mt-8">
-              <a ref={ctaRef} href="#work" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }} className="magnetic-hover inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.04] px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-white/30 hover:bg-white/[0.08]">
-                View Projects
+              <a ref={ctaRef} href="#work" onClick={(e) => { e.preventDefault(); document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }); }} className="magnetic-hover inline-flex items-center gap-3 rounded-full border border-orange-500/20 bg-orange-500/[0.06] px-7 py-3 font-mono text-xs uppercase tracking-[0.15em] text-orange-200/90 backdrop-blur-sm transition-all duration-300 hover:border-orange-400/40 hover:bg-orange-500/[0.12] hover:shadow-[0_0_30px_rgba(255,106,0,0.15)]">
+                <span>Discover My Projects</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M17 7H7M17 7V17" /></svg>
               </a>
             </div>
           </div>
 
-          {/* CENTER - 3D + NAME */}
-          <div className="hero-3d opacity-0 order-1 lg:order-2 flex flex-col items-center">
-            <div className="relative h-[300px] w-[300px] md:h-[400px] md:w-[400px] lg:h-[450px] lg:w-[450px]">
+          {/* CENTER - 3D FLAME + NAME */}
+          <div className="hero-3d opacity-0 order-1 lg:order-2 flex flex-col items-center relative">
+            <div className="relative h-[350px] w-[300px] md:h-[480px] md:w-[400px] lg:h-[520px] lg:w-[440px]">
               <div className="absolute inset-0">
                 <Suspense fallback={null}>
                   <Scene3D />
                 </Suspense>
               </div>
             </div>
-            <h1 className="hero-name absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[clamp(4rem,10vw,9rem)] font-bold leading-[0.85] tracking-tighter text-center pointer-events-none select-none" style={{ opacity: 0, mixBlendMode: 'difference' }}>
-              <span className="gradient-text">ADITYA</span>
+            <h1 className="hero-name absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-[clamp(3.5rem,9vw,8rem)] font-bold leading-[0.85] tracking-tighter text-center pointer-events-none select-none" style={{ opacity: 0, mixBlendMode: 'difference' }}>
+              <span className="gradient-text-flame">ADITYA</span>
             </h1>
           </div>
 
           {/* RIGHT COLUMN */}
           <div className="hero-right opacity-0 order-3 text-center lg:text-right">
             <p className="text-sm leading-relaxed text-white/45 md:text-base max-w-sm mx-auto lg:ml-auto lg:mr-0">
-              Focused on interfaces and experiences, working remotely from <span className="text-white/80">India</span>.
+              Focused on <span className="text-orange-300/90">immersive experiences</span>, working remotely from India. Turning ideas into interactive reality.
             </p>
-            <div className="mt-6 flex flex-col gap-2 items-center lg:items-end">
-              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-white/70 transition-colors">GitHub ↗</a>
-              <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-white/70 transition-colors">Email ↗</a>
+            <div className="mt-8 flex flex-col gap-3 items-center lg:items-end">
+              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-orange-300/80 transition-colors">GitHub ↗</a>
+              <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-orange-300/80 transition-colors">Email ↗</a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Scroll */}
+      {/* Scroll indicator */}
       <div className="hero-scroll absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" style={{ opacity: 0 }}>
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/15">Scroll</span>
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} className="h-8 w-px bg-gradient-to-b from-white/20 to-transparent" />
+        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }} className="h-8 w-px bg-gradient-to-b from-orange-400/30 to-transparent" />
       </div>
     </section>
   );
@@ -329,7 +297,7 @@ function HeroSection() {
 
 /* ──────────────── MARQUEE DIVIDER ──────────────── */
 function MarqueeDivider() {
-  const text = 'CRAFTING HIGH PERFORMANCE DIGITAL INTERFACES  ·  FRONTEND ENGINEER  ·  ';
+  const text = 'CRAFTING IMMERSIVE DIGITAL EXPERIENCES  ·  FRONTEND ENGINEER & DESIGNER  ·  WEBGL & 3D  ·  ';
   return (
     <div className="border-y border-white/[0.04] py-4 overflow-hidden">
       <div className="animate-marquee flex whitespace-nowrap">
@@ -351,13 +319,52 @@ function AboutSection() {
           01 / About
         </motion.span>
 
-        <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr]">
-          {/* LEFT - Story */}
+        <div className="grid gap-16 lg:grid-cols-[1.2fr_1fr]">
+          {/* LEFT - Story with face image */}
           <div>
-            <motion.h2 initial={{ opacity: 0, y: 50, skewY: 2 }} animate={isInView ? { opacity: 1, y: 0, skewY: 0 } : {}} transition={{ duration: 0.8, delay: 0.1, ease: 'power4.out' }} className="text-2xl font-bold uppercase leading-tight tracking-tight text-white md:text-4xl lg:text-[2.8rem]">
+            {/* Face image with artistic styling */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={isInView ? { opacity: 1, scale: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, delay: 0.1, ease: 'power4.out' }}
+              className="relative mb-10 w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 mx-auto lg:mx-0"
+            >
+              <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/[0.08]">
+                <img
+                  src="/face.jpg"
+                  alt="Aditya"
+                  className="w-full h-full object-cover"
+                  style={{ filter: 'contrast(1.1) saturate(0.9) brightness(0.95)' }}
+                />
+                {/* Abstract color overlay matching the reference */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 mix-blend-overlay" />
+                {/* Subtle animated border glow */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(110,123,255,0.2), rgba(168,85,247,0.2), rgba(236,72,153,0.2))',
+                    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    maskComposite: 'exclude',
+                    WebkitMaskComposite: 'xor',
+                    padding: '1px',
+                  }}
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              </div>
+            </motion.div>
+
+            <motion.h2 initial={{ opacity: 0, y: 50, skewY: 2 }} animate={isInView ? { opacity: 1, y: 0, skewY: 0 } : {}} transition={{ duration: 0.8, delay: 0.2, ease: 'power4.out' }} className="text-2xl font-bold uppercase leading-tight tracking-tight text-white md:text-4xl lg:text-[2.8rem]">
               Building interfaces that make ambitious products feel inevitable
             </motion.h2>
-            <motion.p initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.3 }} className="mt-6 text-sm leading-relaxed text-white/40 md:text-base max-w-xl">
+            <motion.p initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.35 }} className="mt-6 text-sm leading-relaxed text-white/40 md:text-base max-w-xl">
               I&apos;m a Front-End Developer & UI/UX Designer specializing in building high-performance, accessible, and visually compelling digital products. Every project starts from the same question: what does this interface need to do, and what is the fastest, clearest way to let it do that.
             </motion.p>
             <motion.p initial={{ opacity: 0, y: 30 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.45 }} className="mt-4 text-sm leading-relaxed text-white/40 md:text-base max-w-xl">
@@ -365,13 +372,37 @@ function AboutSection() {
             </motion.p>
           </div>
 
-          {/* RIGHT - Tools */}
+          {/* RIGHT - Tools + WebGL */}
           <div className="space-y-8">
+            {/* Mini WebGL canvas */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative h-48 md:h-56 rounded-xl overflow-hidden border border-white/[0.06] bg-black/50"
+            >
+              <Suspense fallback={
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/15">Loading WebGL...</span>
+                </div>
+              }>
+                <Scene3DSmall />
+              </Suspense>
+              <div className="absolute bottom-3 left-3 font-mono text-[10px] uppercase tracking-wider text-white/20">WebGL — Real-time</div>
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, x: 30 }} animate={isInView ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.6, delay: 0.3 }}>
-              <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Frontend Tools</h3>
+              <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Frontend & Creative Tools</h3>
               <div className="flex flex-wrap gap-2">
                 {FRONTEND_TOOLS.map((tool, i) => (
-                  <motion.span key={tool} initial={{ opacity: 0, scale: 0.8 }} animate={isInView ? { opacity: 1, scale: 1 } : {}} transition={{ duration: 0.4, delay: 0.4 + i * 0.06 }} className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/50">
+                  <motion.span
+                    key={tool}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ duration: 0.4, delay: 0.4 + i * 0.06 }}
+                    whileHover={{ scale: 1.08, borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.06)' }}
+                    className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/50 cursor-default transition-colors"
+                  >
                     {tool}
                   </motion.span>
                 ))}
@@ -381,23 +412,24 @@ function AboutSection() {
               <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Backend Tools</h3>
               <div className="flex flex-wrap gap-2">
                 {BACKEND_TOOLS.map((tool, i) => (
-                  <motion.span key={tool} initial={{ opacity: 0, scale: 0.8 }} animate={isInView ? { opacity: 1, scale: 1 } : {}} transition={{ duration: 0.4, delay: 0.6 + i * 0.06 }} className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/50">
+                  <motion.span
+                    key={tool}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ duration: 0.4, delay: 0.6 + i * 0.06 }}
+                    whileHover={{ scale: 1.08, borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.06)' }}
+                    className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 font-mono text-[11px] uppercase tracking-wider text-white/50 cursor-default transition-colors"
+                  >
                     {tool}
                   </motion.span>
                 ))}
               </div>
             </motion.div>
 
-            {/* Experience highlights */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.7 }} className="grid grid-cols-2 gap-4 pt-4">
-              <div className="border-t border-white/[0.06] pt-4">
-                <div className="text-2xl font-bold text-white">4+</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/30">Projects Shipped</div>
-              </div>
-              <div className="border-t border-white/[0.06] pt-4">
-                <div className="text-2xl font-bold text-white">India</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/30">Based · Remote</div>
-              </div>
+            {/* Location only - no "4 projects shipped" */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.7 }} className="border-t border-white/[0.06] pt-4">
+              <div className="text-2xl font-bold text-white">India</div>
+              <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/30">Based · Remote</div>
             </motion.div>
           </div>
         </div>
@@ -415,87 +447,194 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
   const springX = useSpring(mouseX, { stiffness: 150, damping: 15 });
   const springY = useSpring(mouseY, { stiffness: 150, damping: 15 });
 
+  // Tilt effect
+  const rotateX = useSpring(0, { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(0, { stiffness: 200, damping: 20 });
+
   const handleMouse = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    mouseX.set(x);
+    mouseY.set(y);
+    // Tilt calculation
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    rotateX.set(((y - centerY) / centerY) * -4);
+    rotateY.set(((x - centerX) / centerX) * 4);
   };
+
+  const handleMouseLeave = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+  };
+
+  // Staggered animation direction
+  const fromX = index % 2 === 0 ? -60 : 60;
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 80 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.9, ease: 'power4.out', delay: index * 0.2 }}
+      initial={{ opacity: 0, x: fromX, y: 30 }}
+      animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: index * 0.15 }}
     >
       <a href={project.link} target="_blank" rel="noopener noreferrer" className="group block">
-        <div
-          className="card-glow relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0d1117] transition-all duration-500 hover:border-white/[0.12]"
+        <motion.div
+          className="card-glow-vibrant relative overflow-hidden rounded-2xl border border-white/[0.08] transition-all duration-500"
+          style={{
+            '--mouse-x': `${springX.get()}px`,
+            '--mouse-y': `${springY.get()}px`,
+            '--card-color': project.accentGlow,
+            rotateX,
+            rotateY,
+            transformPerspective: 1200,
+            background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)`,
+          } as React.CSSProperties}
           onMouseMove={handleMouse}
-          style={{ '--mouse-x': `${springX.get()}px`, '--mouse-y': `${springY.get()}px` } as React.CSSProperties}
+          onMouseLeave={handleMouseLeave}
         >
-          <div className="grid md:grid-cols-[1fr_1.2fr]">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: project.abstractBg }} />
+
+          {/* Animated accent line at top */}
+          <motion.div
+            className="absolute top-0 left-0 h-px"
+            style={{ background: `linear-gradient(90deg, transparent, ${project.color}, transparent)` }}
+            initial={{ width: '0%' }}
+            whileInView={{ width: '100%' }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, delay: 0.5 + index * 0.2, ease: 'easeInOut' }}
+          />
+
+          <div className="grid md:grid-cols-[1fr_1.3fr]">
             {/* LEFT - Content */}
             <div className="relative z-10 flex flex-col justify-between p-8 md:p-10">
               <div>
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/30">
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={isInView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
+                  className="inline-block font-mono text-[11px] uppercase tracking-[0.2em] text-white/30 mb-3"
+                >
                   {String(index + 1).padStart(2, '0')} — {project.category}
-                </span>
-                <h3 className="mt-3 text-2xl font-bold text-white md:text-3xl">{project.title}</h3>
+                </motion.span>
+                <h3 className="text-2xl font-bold text-white md:text-3xl group-hover:text-white transition-colors">{project.title}</h3>
                 <p className="mt-4 text-sm leading-relaxed text-white/35 max-w-md">{project.description}</p>
               </div>
               <div className="mt-8 flex flex-wrap gap-2">
-                {project.tech.map((t) => (
-                  <span key={t} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-white/40">
+                {project.tech.map((t, ti) => (
+                  <motion.span
+                    key={t}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ delay: 0.5 + ti * 0.05, duration: 0.4 }}
+                    whileHover={{ scale: 1.05, borderColor: `${project.color}40`, color: `${project.color}` }}
+                    className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-white/40 transition-all duration-300"
+                  >
                     {t}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT - Laptop mockup */}
-            <div className="relative hidden md:flex items-center justify-center p-8">
-              <div className="laptop-mockup w-full max-w-sm aspect-video relative">
-                {/* Screen content - abstract UI */}
-                <div className="absolute inset-2 rounded bg-[#0a0a0a] overflow-hidden p-3">
-                  <div className="flex gap-1 mb-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 h-[calc(100%-20px)]">
-                    <div className="rounded bg-white/[0.04] col-span-1" />
-                    <div className="rounded bg-white/[0.06] col-span-2 flex flex-col gap-2">
-                      <div className="h-1/3 rounded bg-white/[0.04]" />
-                      <div className="h-2/3 rounded bg-white/[0.03]" />
+            {/* RIGHT - Vibrant abstract mockup */}
+            <div className="relative hidden md:flex items-center justify-center p-8 overflow-hidden">
+              <motion.div
+                className="laptop-mockup-vibrant w-full max-w-sm aspect-video relative rounded-lg overflow-hidden border border-white/[0.08]"
+                whileHover={{ scale: 1.02, y: -4 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              >
+                {/* Browser chrome */}
+                <div className="h-7 bg-white/[0.04] border-b border-white/[0.06] flex items-center gap-1.5 px-3">
+                  <span className="h-2 w-2 rounded-full" style={{ background: project.color }} />
+                  <span className="h-2 w-2 rounded-full bg-white/15" />
+                  <span className="h-2 w-2 rounded-full bg-white/15" />
+                  <div className="ml-3 h-3 w-24 rounded bg-white/[0.06]" />
+                </div>
+                {/* Screen content with abstract visuals */}
+                <div className="relative bg-[#080810] p-4 h-[calc(100%-28px)] overflow-hidden">
+                  {/* Abstract background */}
+                  <div className="absolute inset-0 opacity-40" style={{ background: project.abstractBg }} />
+
+                  {/* Animated abstract shapes */}
+                  <motion.div
+                    className="absolute top-4 right-4 h-16 w-16 rounded-full opacity-20 blur-sm"
+                    style={{ background: project.color }}
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.35, 0.2] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    className="absolute bottom-4 left-4 h-12 w-12 rounded-lg opacity-15 blur-sm"
+                    style={{ background: project.color }}
+                    animate={{ rotate: [0, 90, 0], scale: [1, 1.2, 1] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-32 rounded-full opacity-10 blur-md"
+                    style={{ background: project.color }}
+                    animate={{ x: [-10, 10, -10], y: [-5, 5, -5] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+
+                  {/* Mock UI elements */}
+                  <div className="relative grid grid-cols-3 gap-2 h-full">
+                    <div className="col-span-1 space-y-2">
+                      <div className="h-2 w-12 rounded bg-white/[0.08]" />
+                      <div className="h-2 w-8 rounded bg-white/[0.05]" />
+                      <div className="h-2 w-10 rounded bg-white/[0.06]" />
+                      <div className="mt-4 h-8 w-full rounded-md" style={{ background: `${project.color}15` }} />
+                      <div className="h-8 w-full rounded-md bg-white/[0.04]" />
+                      <div className="h-8 w-full rounded-md bg-white/[0.04]" />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <div className="h-3 w-20 rounded bg-white/[0.08]" />
+                      <div className="h-2 w-full rounded bg-white/[0.04]" />
+                      <div className="h-2 w-3/4 rounded bg-white/[0.04]" />
+                      <div className="mt-3 h-16 w-full rounded-md border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
+                        <div className="h-1 w-12 rounded" style={{ background: `${project.color}30` }} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="h-10 rounded-md" style={{ background: `${project.color}10` }} />
+                        <div className="h-10 rounded-md bg-white/[0.03]" />
+                      </div>
                     </div>
                   </div>
                 </div>
-                {/* Color accent glow on screen */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="h-20 w-20 rounded-full opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-20" style={{ background: project.color }} />
+
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 60px ${project.accentGlow}15` }} />
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Bottom bar */}
           <div className="relative z-10 flex items-center justify-between border-t border-white/[0.04] px-8 py-4 md:px-10">
             <div className="flex items-center gap-3">
-              {/* GitHub icon */}
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors">
+              <motion.span
+                whileHover={{ scale: 1.1, borderColor: `${project.color}40` }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" /></svg>
-              </span>
-              {/* Link icon */}
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors">
+              </motion.span>
+              <motion.span
+                whileHover={{ scale: 1.1, borderColor: `${project.color}40` }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M17 7H7M17 7V17" /></svg>
-              </span>
+              </motion.span>
             </div>
-            <span className="font-mono text-[11px] uppercase tracking-wider text-white/30 transition-colors group-hover:text-white/60">
+            <motion.span
+              className="font-mono text-[11px] uppercase tracking-wider text-white/30 group-hover:text-white/60 transition-colors"
+              animate={{ x: [0, 0] }}
+              whileHover={{ x: 4 }}
+            >
               View Project →
-            </span>
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
       </a>
     </motion.div>
   );
@@ -532,6 +671,9 @@ function ContactSection() {
 
   return (
     <section ref={sectionRef} id="contact" className="relative grid-bg-subtle px-6 py-28 md:px-12 lg:px-16">
+      {/* Warm glow */}
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[300px] w-[600px] rounded-full bg-[radial-gradient(circle,rgba(255,106,0,0.05)_0%,transparent_60%)]" />
+
       <div className="mx-auto max-w-6xl">
         <motion.h2
           initial={{ opacity: 0, y: 60 }}
@@ -547,7 +689,7 @@ function ContactSection() {
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay: 0.5 }} className="mt-10 flex flex-wrap items-center gap-6">
-          <a ref={emailRef} href="mailto:hi.aditya.dev@gmail.com" className="magnetic-hover font-mono text-sm uppercase tracking-[0.1em] text-white/70 underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-colors">
+          <a ref={emailRef} href="mailto:hi.aditya.dev@gmail.com" className="magnetic-hover font-mono text-sm uppercase tracking-[0.1em] text-orange-300/80 underline underline-offset-4 decoration-orange-400/30 hover:decoration-orange-400/60 transition-colors">
             Send me an email
           </a>
           <span className="text-white/20 font-mono text-sm">OR</span>
@@ -557,10 +699,10 @@ function ContactSection() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ duration: 0.6, delay: 0.7 }} className="mt-12 flex items-center gap-8">
-          <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-white/60 transition-colors">
+          <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-orange-300/70 transition-colors">
             GitHub ↗
           </a>
-          <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-white/60 transition-colors">
+          <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-orange-300/70 transition-colors">
             Email ↗
           </a>
           <span className="font-mono text-[11px] uppercase tracking-wider text-white/25">
@@ -583,13 +725,16 @@ function Footer() {
         initial={{ opacity: 0, y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: 'power4.out' }}
-        className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0d1117] p-8 md:p-12"
+        className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a0a0f] p-8 md:p-12 relative"
       >
+        {/* Gradient accent border at top */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+
         <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr]">
           {/* LEFT - Branding */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black font-bold text-lg">A</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold text-lg">A</div>
               <div>
                 <h3 className="text-xl font-bold text-white">ADITYA</h3>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">Front-End Developer & Designer</p>
@@ -599,7 +744,7 @@ function Footer() {
               Building high-performance digital interfaces with precision engineering and intentional design. Every pixel, every animation, every interaction — crafted with purpose.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {['NEXT.JS', 'REACT', 'TYPESCRIPT', 'GSAP', 'FRAMER MOTION'].map((t) => (
+              {['NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GSAP', 'FRAMER MOTION'].map((t) => (
                 <span key={t} className="rounded-full border border-white/[0.06] bg-white/[0.02] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-white/30">
                   {t}
                 </span>
@@ -609,18 +754,21 @@ function Footer() {
 
           {/* RIGHT - Visual / Info */}
           <div className="flex flex-col items-center md:items-end gap-6">
-            {/* Mini laptop mockup */}
             <div className="relative w-full max-w-xs">
               <div className="laptop-mockup aspect-video relative">
-                <div className="absolute inset-1.5 rounded bg-[#050505] overflow-hidden flex items-center justify-center">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/15">Portfolio Preview</span>
+                <div className="absolute inset-1.5 rounded bg-[#050505] overflow-hidden flex items-center justify-center relative">
+                  {/* Mini flame representation */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-16 w-8 rounded-full bg-gradient-to-t from-orange-600/30 via-yellow-500/20 to-transparent blur-sm animate-pulse" />
+                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/15 relative z-10">Portfolio Preview</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-wider text-white/25">
-              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition-colors">GitHub</a>
+              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="hover:text-orange-300/70 transition-colors">GitHub</a>
               <span className="text-white/10">|</span>
-              <a href="mailto:hi.aditya.dev@gmail.com" className="hover:text-white/60 transition-colors">Email</a>
+              <a href="mailto:hi.aditya.dev@gmail.com" className="hover:text-orange-300/70 transition-colors">Email</a>
               <span className="text-white/10">|</span>
               <span>India</span>
             </div>
@@ -634,7 +782,7 @@ function Footer() {
           </span>
           <button
             onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}
-            className="font-mono text-[11px] uppercase tracking-wider text-white/20 hover:text-white/50 transition-colors"
+            className="font-mono text-[11px] uppercase tracking-wider text-white/20 hover:text-orange-300/50 transition-colors"
           >
             Back to top ↑
           </button>
