@@ -17,9 +17,9 @@ gsap.registerPlugin(ScrollTrigger);
 const PROJECTS = [
   {
     id: 1,
-    title: 'IBS Commerce',
-    category: 'E-Commerce · Web App',
-    description: 'A premium e-commerce platform with sub-second interactions, instant filtering, and a checkout flow engineered to remove every unnecessary click.',
+    title: 'IBS',
+    category: 'Corporate · Business Website',
+    description: 'A corporate business website showcasing company services, team, and brand identity with a refined professional design system, smooth scroll animations, and a responsive layout engineered for credibility and clarity.',
     tech: ['NEXT.JS', 'TYPESCRIPT', 'TAILWIND CSS'],
     link: 'https://ibs-com-aadi.vercel.app/',
     color: '#6e7bff',
@@ -457,11 +457,10 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
     const y = e.clientY - rect.top;
     mouseX.set(x);
     mouseY.set(y);
-    // Tilt calculation
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    rotateX.set(((y - centerY) / centerY) * -4);
-    rotateY.set(((x - centerX) / centerX) * 4);
+    rotateX.set(((y - centerY) / centerY) * -3);
+    rotateY.set(((x - centerX) / centerX) * 3);
   };
 
   const handleMouseLeave = () => {
@@ -470,7 +469,7 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
   };
 
   // Staggered animation direction
-  const fromX = index % 2 === 0 ? -60 : 60;
+  const fromX = index % 2 === 0 ? -50 : 50;
 
   return (
     <motion.div
@@ -489,17 +488,17 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
             rotateX,
             rotateY,
             transformPerspective: 1200,
-            background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)`,
+            background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)`,
           } as React.CSSProperties}
           onMouseMove={handleMouse}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Animated gradient background */}
+          {/* Hover gradient background */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: project.abstractBg }} />
 
           {/* Animated accent line at top */}
           <motion.div
-            className="absolute top-0 left-0 h-px"
+            className="absolute top-0 left-0 h-px z-20"
             style={{ background: `linear-gradient(90deg, transparent, ${project.color}, transparent)` }}
             initial={{ width: '0%' }}
             whileInView={{ width: '100%' }}
@@ -507,94 +506,129 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
             transition={{ duration: 1.5, delay: 0.5 + index * 0.2, ease: 'easeInOut' }}
           />
 
-          <div className="grid md:grid-cols-[1fr_1.3fr]">
-            {/* LEFT - Content */}
-            <div className="relative z-10 flex flex-col justify-between p-8 md:p-10">
-              <div>
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={isInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
-                  className="inline-block font-mono text-[11px] uppercase tracking-[0.2em] text-white/30 mb-3"
-                >
-                  {String(index + 1).padStart(2, '0')} — {project.category}
-                </motion.span>
-                <h3 className="text-2xl font-bold text-white md:text-3xl group-hover:text-white transition-colors">{project.title}</h3>
-                <p className="mt-4 text-sm leading-relaxed text-white/35 max-w-md">{project.description}</p>
+          {/* ═══ ILLUSTRATION SECTION — Full Width Screenshot ═══ */}
+          <div className="relative z-10">
+            {/* Browser chrome bar */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.05] bg-white/[0.02]">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: project.color, opacity: 0.9 }} />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
               </div>
-              <div className="mt-8 flex flex-wrap gap-2">
-                {project.tech.map((t, ti) => (
-                  <motion.span
-                    key={t}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.5 + ti * 0.05, duration: 0.4 }}
-                    whileHover={{ scale: 1.05, borderColor: `${project.color}40`, color: `${project.color}` }}
-                    className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-white/40 transition-all duration-300"
-                  >
-                    {t}
-                  </motion.span>
-                ))}
+              {/* URL bar */}
+              <div className="flex-1 flex justify-center">
+                <div className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.03] px-4 py-1.5 max-w-md w-full">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 flex-shrink-0"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                  <span className="font-mono text-[10px] text-white/20 truncate">{project.link.replace('https://', '').replace('/', '')}</span>
+                </div>
+              </div>
+              {/* Project number badge */}
+              <div className="flex-shrink-0 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1">
+                <span className="font-mono text-[10px] tracking-wider" style={{ color: project.color, opacity: 0.7 }}>
+                  {String(index + 1).padStart(2, '0')}
+                </span>
               </div>
             </div>
 
-            {/* RIGHT - Real project screenshot in laptop mockup */}
-            <div className="relative hidden md:flex items-center justify-center p-8 overflow-hidden">
-              <motion.div
-                className="laptop-mockup-vibrant w-full max-w-sm aspect-video relative rounded-lg overflow-hidden border border-white/[0.08]"
-                whileHover={{ scale: 1.03, y: -6 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-              >
-                {/* Browser chrome */}
-                <div className="h-7 bg-white/[0.04] border-b border-white/[0.06] flex items-center gap-1.5 px-3 relative z-10">
-                  <span className="h-2 w-2 rounded-full" style={{ background: project.color }} />
-                  <span className="h-2 w-2 rounded-full bg-white/15" />
-                  <span className="h-2 w-2 rounded-full bg-white/15" />
-                  <div className="ml-3 h-3 w-24 rounded bg-white/[0.06]" />
-                </div>
-                {/* Screenshot */}
-                <div className="relative h-[calc(100%-28px)] overflow-hidden bg-[#0a0a0a]">
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover object-top"
-                    loading="lazy"
-                  />
-                  {/* Subtle color overlay for cohesion */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/60 via-transparent to-transparent" />
-                  {/* Glow on hover */}
-                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 80px ${project.accentGlow}20` }} />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="relative z-10 flex items-center justify-between border-t border-white/[0.04] px-8 py-4 md:px-10">
-            <div className="flex items-center gap-3">
-              <motion.span
-                whileHover={{ scale: 1.1, borderColor: `${project.color}40` }}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" /></svg>
-              </motion.span>
-              <motion.span
-                whileHover={{ scale: 1.1, borderColor: `${project.color}40` }}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17L17 7M17 7H7M17 7V17" /></svg>
-              </motion.span>
-            </div>
-            <motion.span
-              className="font-mono text-[11px] uppercase tracking-wider text-white/30 group-hover:text-white/60 transition-colors"
-              animate={{ x: [0, 0] }}
-              whileHover={{ x: 4 }}
+            {/* Screenshot area */}
+            <motion.div
+              className="relative overflow-hidden bg-[#0a0a0a]"
+              style={{ height: '280px' }}
+              whileHover={{ scale: 1.01 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-              View Project →
-            </motion.span>
+              <img
+                src={project.image}
+                alt={project.title}
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+                loading="lazy"
+              />
+              {/* Bottom gradient fade into content */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/60 to-transparent" />
+              {/* Side vignette for depth */}
+              <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 120px 20px rgba(0,0,0,0.4)` }} />
+              {/* Colored glow on hover */}
+              <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 50% 80%, ${project.accentGlow}15, transparent 60%)` }} />
+              </div>
+              {/* Category floating badge on image */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
+                className="absolute top-4 right-4 rounded-full border border-white/[0.1] bg-black/50 backdrop-blur-md px-3 py-1"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/60">{project.category}</span>
+              </motion.div>
+            </motion.div>
           </div>
+
+          {/* ═══ CONTENT SECTION ═══ */}
+          <div className="relative z-10 p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+              {/* Left — Title + Description */}
+              <div className="flex-1">
+                <motion.h3
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.25 + index * 0.1, duration: 0.6, ease: 'power3.out' }}
+                  className="text-2xl font-bold text-white md:text-[1.7rem] leading-tight group-hover:text-white transition-colors"
+                >
+                  {project.title}
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.35 + index * 0.1, duration: 0.5 }}
+                  className="mt-3 text-sm leading-relaxed text-white/35 max-w-lg"
+                >
+                  {project.description}
+                </motion.p>
+
+                {/* Tech stack */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
+                  className="mt-5 flex flex-wrap gap-2"
+                >
+                  {project.tech.map((t, ti) => (
+                    <motion.span
+                      key={t}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                      transition={{ delay: 0.55 + ti * 0.05, duration: 0.3 }}
+                      whileHover={{ scale: 1.05, borderColor: `${project.color}40`, color: project.color }}
+                      className="rounded-md border border-white/[0.08] bg-white/[0.02] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/35 transition-all duration-300"
+                    >
+                      {t}
+                    </motion.span>
+                  ))}
+                </motion.div>
+              </div>
+
+              {/* Right — CTA + Actions */}
+              <div className="flex flex-row items-center gap-3 md:flex-col md:items-end md:gap-4 flex-shrink-0">
+                {/* Arrow button */}
+                <motion.div
+                  whileHover={{ scale: 1.1, borderColor: `${project.color}50` }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.03] transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/[0.06]"
+                  style={{ '--hover-color': project.color } as React.CSSProperties}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/40 group-hover:text-white/80 transition-colors">
+                    <path d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </motion.div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/25 group-hover:text-white/50 transition-colors duration-300">
+                  View Project
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom accent line */}
+          <div className="relative z-10 h-px bg-white/[0.04]" />
         </motion.div>
       </a>
     </motion.div>
@@ -718,9 +752,10 @@ function Footer() {
             <div className="relative w-full max-w-xs">
               <div className="laptop-mockup aspect-video relative">
                 <div className="absolute inset-1.5 rounded bg-[#050505] overflow-hidden flex items-center justify-center relative">
-                  {/* Mini flame representation */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-16 w-8 rounded-full bg-gradient-to-t from-orange-600/30 via-yellow-500/20 to-transparent blur-sm animate-pulse" />
+                  {/* Mini sandworm silhouette */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                    <div className="h-8 w-24 rounded-full bg-gradient-to-r from-amber-700/20 via-amber-500/15 to-amber-700/20 blur-sm" />
+                    <div className="absolute h-4 w-16 rounded-full bg-gradient-to-r from-amber-600/10 via-yellow-500/10 to-amber-600/10 blur-xs" />
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-wider text-white/15 relative z-10">Portfolio Preview</span>
                 </div>

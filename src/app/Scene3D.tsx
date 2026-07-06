@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -59,37 +59,40 @@ const noiseGLSL = `
 const wormVertexShader = `
   uniform float uTime;
   uniform float uWormSpeed;
+  uniform float uScale;
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vWorldPos;
   varying float vFresnel;
+  varying float vRingPos;
 
   ${noiseGLSL}
 
   void main() {
     vUv = uv;
+    vRingPos = uv.x;
     vNormal = normalize(normalMatrix * normal);
 
     vec3 pos = position;
 
-    // Ring segments: the worm body
     float ring = uv.x;        // 0 = tail, 1 = head
     float around = uv.y;      // 0-1 around the circumference
 
-    // Worm body profile: thick in middle, tapered at ends
+    // VERY solid body profile — nearly uniform thickness with minimal taper
     float bodyRadius = sin(ring * 3.14159);
-    bodyRadius = pow(bodyRadius, 0.6); // more uniform thickness
+    bodyRadius = pow(bodyRadius, 0.25); // extremely uniform — almost a tube
 
-    // Ring segment bumps (like the Dune worm's crystalline segments)
-    float segments = sin(ring * 80.0) * 0.04 * bodyRadius;
-    segments += sin(ring * 120.0 + 1.5) * 0.02 * bodyRadius;
+    // Ring segment bumps — Dune-style crystalline armor plates (sharper, more defined)
+    float seg1 = sin(ring * 120.0) * 0.03 * bodyRadius;
+    float seg2 = sin(ring * 180.0 + 1.5) * 0.015 * bodyRadius;
+    float segments = seg1 + seg2;
 
-    // Undulating wave motion along the body
-    float wave1 = sin(ring * 6.28318 * 2.0 - uTime * uWormSpeed) * 0.6 * bodyRadius;
-    float wave2 = sin(ring * 6.28318 * 3.5 - uTime * uWormSpeed * 1.3) * 0.3 * bodyRadius;
-    float wave3 = sin(ring * 6.28318 * 1.0 - uTime * uWormSpeed * 0.7 + 2.0) * 0.8 * bodyRadius;
+    // Very smooth, subtle undulation — barely-there for maximum solidity
+    float wave1 = sin(ring * 6.28318 * 1.2 - uTime * uWormSpeed) * 0.18 * bodyRadius;
+    float wave2 = sin(ring * 6.28318 * 2.0 - uTime * uWormSpeed * 1.1) * 0.08 * bodyRadius;
+    float wave3 = sin(ring * 6.28318 * 0.6 - uTime * uWormSpeed * 0.5 + 2.0) * 0.25 * bodyRadius;
 
-    // Apply radius to the ring position
+    // Apply radius to ring position
     float angle = around * 6.28318;
     float px = cos(angle) * bodyRadius;
     float py = sin(angle) * bodyRadius;
@@ -99,30 +102,38 @@ const wormVertexShader = `
     px *= bumpDir;
     py *= bumpDir;
 
-    // The worm travels in a large sinusoidal path in XZ
-    // ring=0 is tail, ring=1 is head
-    float pathX = (ring - 0.5) * 18.0;
-    float pathY = wave1 + wave2 * 0.5;
-    float pathZ = wave3 + sin(ring * 4.0 - uTime * uWormSpeed * 0.5) * 0.5;
+    // The worm travels in a sinusoidal path across the screen
+    float pathX = (ring - 0.5) * 24.0;
+    float pathY = wave1 + wave2 * 0.4;
+    float pathZ = wave3 + sin(ring * 2.5 - uTime * uWormSpeed * 0.35) * 0.25;
 
-    // Mouth opening at the head
+    // Mouth opening at the head — wider, more menacing
     float mouthOpen = 0.0;
-    if (ring > 0.92) {
-      mouthOpen = (ring - 0.92) / 0.08;
-      float innerRadius = bodyRadius * (1.0 - mouthOpen * 0.6);
-      float innerAngle = angle;
-      px = cos(innerAngle) * innerRadius;
-      py = sin(innerAngle) * innerRadius;
-      // Jaw split - upper and lower jaw
+    if (ring > 0.91) {
+      mouthOpen = (ring - 0.91) / 0.09;
+      float innerRadius = bodyRadius * (1.0 - mouthOpen * 0.5);
+      px = cos(angle) * innerRadius;
+      py = sin(angle) * innerRadius;
       float jawSplit = sin(angle) * mouthOpen * 0.4 * bodyRadius;
       py += jawSplit;
     }
 
+    // Tail taper — smoother, more gradual
+    if (ring < 0.1) {
+      float tailTaper = ring / 0.1;
+      tailTaper = tailTaper * tailTaper * (3.0 - 2.0 * tailTaper); // smoothstep
+      px *= tailTaper;
+      py *= tailTaper;
+    }
+
     pos = vec3(pathX + px, pathY + py, pathZ);
 
-    // Slight per-vertex noise for organic feel
-    float vertNoise = snoise(vec3(ring * 5.0, around * 3.0, uTime * 2.0)) * 0.06 * bodyRadius;
-    pos += normalize(vec3(px, py, 0.0)) * vertNoise;
+    // Extremely subtle per-vertex noise for organic feel without breaking solidity
+    float vertNoise = snoise(vec3(ring * 3.0, around * 1.5, uTime * 1.0)) * 0.01 * bodyRadius;
+    pos += normalize(vec3(px, py, 0.001)) * vertNoise;
+
+    // Apply scale
+    pos *= uScale;
 
     vec4 worldPos = modelMatrix * vec4(pos, 1.0);
     vWorldPos = worldPos.xyz;
@@ -142,112 +153,246 @@ const wormFragmentShader = `
   varying vec3 vNormal;
   varying vec3 vWorldPos;
   varying float vFresnel;
+  varying float vRingPos;
 
   void main() {
-    float ring = vUv.x;
+    float ring = vRingPos;
     float around = vUv.y;
 
-    // Base sand/desert color palette
-    vec3 deepDark = vec3(0.04, 0.02, 0.01);    // dark interior
-    vec3 baseSand = vec3(0.55, 0.35, 0.15);     // warm sand
-    vec3 lightSand = vec3(0.85, 0.65, 0.35);    // bright sand highlight
-    vec3 crystalBlue = vec3(0.15, 0.25, 0.4);   // Dune blue crystal accents
-    vec3 mouthGlow = vec3(0.9, 0.4, 0.1);       // orange mouth glow
+    // Dune-accurate color palette — deep earthy sand tones
+    vec3 deepDark = vec3(0.08, 0.05, 0.02);      // dark interior — slightly warmer
+    vec3 baseSand = vec3(0.55, 0.38, 0.18);       // warm desert sand
+    vec3 lightSand = vec3(0.82, 0.65, 0.38);      // sunlit sand
+    vec3 crystalBlue = vec3(0.1, 0.18, 0.32);     // Dune blue crystal
+    vec3 mouthGlow = vec3(0.9, 0.4, 0.1);         // hot orange mouth
+    vec3 armorHighlight = vec3(0.7, 0.52, 0.28);  // armor plate highlight
+    vec3 ridgeGold = vec3(0.85, 0.7, 0.4);        // golden ridge highlights
 
-    // Body coloring based on ring position
+    // Solid body coloring — very consistent
     float bodyColor = sin(ring * 3.14159);
-    vec3 color = mix(deepDark, baseSand, pow(bodyColor, 0.5));
+    vec3 color = mix(deepDark * 1.5, baseSand, pow(bodyColor, 0.25));
 
-    // Segment ring pattern
-    float ringPattern = sin(ring * 80.0) * 0.5 + 0.5;
-    color = mix(color, lightSand, ringPattern * 0.15);
+    // Segment ring pattern — pronounced, Dune-like armor plates
+    float ringPattern = sin(ring * 120.0) * 0.5 + 0.5;
+    float ringPattern2 = sin(ring * 180.0 + 1.5) * 0.5 + 0.5;
+    float ringGroove = smoothstep(0.45, 0.5, ringPattern) * smoothstep(0.55, 0.5, ringPattern);
+    color = mix(color, armorHighlight, ringPattern * 0.14 + ringPattern2 * 0.07);
+    // Dark groove between plates
+    color = mix(color, color * 0.65, ringGroove * 0.25);
 
-    // Crystal/blue accent bands (like Dune worm's blue-ish hue)
-    float crystalBands = smoothstep(0.48, 0.5, fract(ring * 20.0)) * smoothstep(0.52, 0.5, fract(ring * 20.0));
-    color = mix(color, crystalBlue, crystalBands * 0.3);
+    // Crystal/blue accent bands — Dune-style
+    float crystalBands = smoothstep(0.47, 0.5, fract(ring * 30.0)) * smoothstep(0.53, 0.5, fract(ring * 30.0));
+    color = mix(color, crystalBlue, crystalBands * 0.2);
 
-    // Belly (bottom of worm = lower half of circumference)
-    float belly = smoothstep(0.3, 0.7, sin(around * 6.28318));
-    color = mix(color * 0.6, color, belly);
+    // Belly shading — softer transition
+    float belly = smoothstep(0.25, 0.65, sin(around * 6.28318));
+    color = mix(color * 0.5, color, belly);
 
-    // Top ridge highlights
+    // Top ridge armor — wider, more defined ridges
     float ridge = pow(max(sin(around * 6.28318), 0.0), 8.0);
-    color += lightSand * ridge * 0.3;
+    color += ridgeGold * ridge * 0.4;
+
+    // Side armor plate grooves — deeper, more defined
+    float groove = pow(abs(cos(around * 6.28318)), 16.0);
+    color = mix(color, color * 0.6, groove * 0.2);
+
+    // Longitudinal ridge lines (like Dune worm segments)
+    float longRidge1 = smoothstep(0.0, 0.15, abs(around - 0.0)) * smoothstep(0.3, 0.15, abs(around - 0.0));
+    float longRidge2 = smoothstep(0.0, 0.15, abs(around - 0.25)) * smoothstep(0.3, 0.15, abs(around - 0.25));
+    float longRidge3 = smoothstep(0.0, 0.15, abs(around - 0.5)) * smoothstep(0.3, 0.15, abs(around - 0.5));
+    float longRidge4 = smoothstep(0.0, 0.15, abs(around - 0.75)) * smoothstep(0.3, 0.15, abs(around - 0.75));
+    float longRidges = longRidge1 + longRidge2 + longRidge3 + longRidge4;
+    color += ridgeGold * longRidges * 0.08;
 
     // Mouth interior glow
-    if (ring > 0.9) {
-      float mouthFactor = (ring - 0.9) / 0.1;
-      color = mix(color, mouthGlow, mouthFactor * 0.8);
-      // Teeth-like bright edges
-      float teeth = sin(around * 40.0) * 0.5 + 0.5;
-      color = mix(color, vec3(0.95, 0.9, 0.7), teeth * mouthFactor * 0.5);
+    if (ring > 0.87) {
+      float mouthFactor = smoothstep(0.87, 1.0, ring);
+      color = mix(color, mouthGlow, mouthFactor * 0.9);
+      // Teeth-like bright crystal edges — sharper
+      float teeth = pow(sin(around * 60.0) * 0.5 + 0.5, 0.8);
+      color = mix(color, vec3(0.95, 0.9, 0.7), teeth * mouthFactor * 0.65);
+      // Inner mouth darkness
+      float innerMouth = sin(around * 6.28318) * 0.5 + 0.5;
+      color = mix(color, vec3(0.12, 0.04, 0.02), innerMouth * mouthFactor * 0.5);
     }
 
-    // Fresnel edge glow (subtle blue rim like in the movie)
-    color += vec3(0.1, 0.2, 0.35) * vFresnel * 0.6;
+    // Fresnel edge glow — subtle
+    color += vec3(0.1, 0.18, 0.32) * vFresnel * 0.4;
 
-    // Pulsing bioluminescent veins
-    float veins = sin(ring * 60.0 + around * 20.0) * sin(ring * 30.0 - uTime * 3.0);
-    veins = smoothstep(0.7, 0.9, veins);
-    color += vec3(0.3, 0.5, 0.8) * veins * 0.15;
+    // Bioluminescent veins — very subtle
+    float veins = sin(ring * 60.0 + around * 18.0) * sin(ring * 30.0 - uTime * 2.0);
+    veins = smoothstep(0.8, 0.95, veins);
+    color += vec3(0.2, 0.35, 0.6) * veins * 0.06;
 
-    // Simple lighting
-    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
+    // Strong diffuse lighting for solid, 3D feel
+    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.6));
     float diff = max(dot(vNormal, lightDir), 0.0);
-    color *= 0.4 + diff * 0.6;
+    color *= 0.55 + diff * 0.55;
 
-    // Specular highlight
+    // Fill light from below — warmer
+    vec3 fillLight = normalize(vec3(-0.4, -0.6, 0.3));
+    float fill = max(dot(vNormal, fillLight), 0.0);
+    color += vec3(0.12, 0.08, 0.04) * fill * 0.5;
+
+    // Broad specular for solid surface
     vec3 viewDir = normalize(cameraPosition - vWorldPos);
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(vNormal, halfDir), 0.0), 32.0);
-    color += vec3(1.0, 0.9, 0.7) * spec * 0.3;
+    float spec = pow(max(dot(vNormal, halfDir), 0.0), 20.0);
+    color += vec3(1.0, 0.9, 0.7) * spec * 0.4;
 
-    // Slight shimmer
-    float shimmer = sin(ring * 200.0 + uTime * 5.0) * 0.03;
+    // Second specular for armor plates
+    vec3 halfDir2 = normalize(vec3(-0.5, 0.8, -0.3) + viewDir);
+    float spec2 = pow(max(dot(vNormal, halfDir2), 0.0), 36.0);
+    color += vec3(0.8, 0.65, 0.4) * spec2 * 0.2;
+
+    // Third specular — rim light
+    vec3 halfDir3 = normalize(vec3(0.0, 0.3, -1.0) + viewDir);
+    float spec3 = pow(max(dot(vNormal, halfDir3), 0.0), 48.0);
+    color += vec3(0.15, 0.22, 0.35) * spec3 * 0.3;
+
+    // Subtle shimmer on armor
+    float shimmer = sin(ring * 300.0 + uTime * 3.0) * 0.015;
     color += shimmer;
+
+    // Ensure minimum brightness
+    color = max(color, vec3(0.04, 0.03, 0.015));
 
     gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-/* ──────────────── SAND DUST PARTICLES ──────────────── */
-function SandParticles() {
+/* ──────────────── ENHANCED SAND DUST PARTICLES ──────────────── */
+function SandParticles({ wormScale }: { wormScale: number }) {
   const pointsRef = useRef<THREE.Points>(null!);
-  const count = 300;
+  const count = 1200; // Doubled for denser, richer effect
 
-  const [positions, velocities] = useMemo(() => {
+  const [positions, velocities, sizes, opacities, colors] = useMemo(() => {
     const pos = new Float32Array(count * 3);
     const vel = new Float32Array(count * 3);
+    const sz = new Float32Array(count);
+    const op = new Float32Array(count);
+    const col = new Float32Array(count * 3); // RGB per particle
+
+    // Sand color palette
+    const sandColors = [
+      [0.85, 0.65, 0.35],  // bright sand
+      [0.7, 0.5, 0.25],   // mid sand
+      [0.6, 0.42, 0.2],   // warm sand
+      [0.5, 0.35, 0.18],  // deep sand
+      [0.9, 0.75, 0.45],  // golden sand
+      [0.4, 0.28, 0.15],  // dark sand
+    ];
+
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 24;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 6;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 6;
-      vel[i * 3] = (Math.random() - 0.5) * 0.01;
-      vel[i * 3 + 1] = Math.random() * 0.005 + 0.002;
-      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
+      // Distribute in a wider, more organic pattern following worm path
+      const spreadX = 35;
+      const spreadY = 10;
+      const spreadZ = 10;
+      pos[i * 3] = (Math.random() - 0.5) * spreadX;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * spreadY;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * spreadZ;
+
+      // Velocities — more varied, organic
+      vel[i * 3] = (Math.random() - 0.5) * 0.006;
+      vel[i * 3 + 1] = Math.random() * 0.003 + 0.0005;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.006;
+
+      // Varied sizes — from fine dust to visible grains
+      sz[i] = Math.random() * 0.08 + 0.01;
+
+      // Varied opacities
+      op[i] = Math.random() * 0.6 + 0.15;
+
+      // Assign sand color
+      const c = sandColors[Math.floor(Math.random() * sandColors.length)];
+      col[i * 3] = c[0];
+      col[i * 3 + 1] = c[1];
+      col[i * 3 + 2] = c[2];
     }
-    return [pos, vel];
+    return [pos, vel, sz, op, col];
+  }, []);
+
+  const particleMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aOpacity;
+        attribute vec3 aColor;
+        varying float vOpacity;
+        varying float vDist;
+        varying vec3 vColor;
+        void main() {
+          vOpacity = aOpacity;
+          vColor = aColor;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          vDist = -mvPos.z;
+          // Soft size falloff with distance
+          gl_PointSize = aSize * (250.0 / -mvPos.z);
+          gl_PointSize = clamp(gl_PointSize, 0.5, 12.0);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying float vOpacity;
+        varying float vDist;
+        varying vec3 vColor;
+        void main() {
+          // Soft circular particle with glow
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          // Soft edge + bright core
+          float alpha = smoothstep(0.5, 0.2, d) * vOpacity;
+          float core = smoothstep(0.3, 0.0, d);
+          vec3 finalColor = mix(vColor, vColor * 1.4, core * 0.5);
+          // Fade with distance
+          alpha *= smoothstep(30.0, 10.0, vDist);
+          // Near-camera fade to avoid popping
+          alpha *= smoothstep(1.0, 3.0, vDist);
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
   }, []);
 
   useFrame((state) => {
     if (!pointsRef.current) return;
     const posArr = pointsRef.current.geometry.attributes.position.array as Float32Array;
     const time = state.clock.elapsedTime;
+    particleMaterial.uniforms.uTime.value = time;
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      posArr[i3] += velocities[i3] + Math.sin(time + i * 0.1) * 0.003;
-      posArr[i3 + 1] += velocities[i3 + 1];
-      posArr[i3 + 2] += velocities[i3 + 2] + Math.cos(time * 0.8 + i * 0.2) * 0.002;
+
+      // Organic drift — follows worm motion pattern
+      posArr[i3] += velocities[i3] + Math.sin(time * 0.4 + i * 0.12) * 0.0015;
+      posArr[i3 + 1] += velocities[i3 + 1] + Math.sin(time * 0.6 + i * 0.08) * 0.0005;
+      posArr[i3 + 2] += velocities[i3 + 2] + Math.cos(time * 0.35 + i * 0.2) * 0.001;
+
+      // Subtle turbulence
+      posArr[i3] += Math.sin(time * 0.25 + posArr[i3 + 1] * 0.3) * 0.0008;
+      posArr[i3 + 2] += Math.cos(time * 0.2 + posArr[i3] * 0.2) * 0.0005;
+
+      // Gentle swirling motion (desert wind)
+      posArr[i3] += Math.cos(time * 0.15 + i * 0.01) * 0.0003;
+      posArr[i3 + 2] += Math.sin(time * 0.15 + i * 0.01) * 0.0003;
 
       // Reset if out of bounds
-      if (posArr[i3 + 1] > 4) {
-        posArr[i3] = (Math.random() - 0.5) * 24;
-        posArr[i3 + 1] = -3;
-        posArr[i3 + 2] = (Math.random() - 0.5) * 6;
+      if (posArr[i3 + 1] > 6) {
+        posArr[i3] = (Math.random() - 0.5) * 35;
+        posArr[i3 + 1] = -5;
+        posArr[i3 + 2] = (Math.random() - 0.5) * 10;
       }
-      // Wave-like drift following the worm
-      posArr[i3] += Math.sin(time * 0.5 + posArr[i3 + 1] * 0.5) * 0.002;
+      if (Math.abs(posArr[i3]) > 18) {
+        posArr[i3] = (Math.random() - 0.5) * 35;
+        posArr[i3 + 1] = (Math.random() - 0.5) * 10;
+        posArr[i3 + 2] = (Math.random() - 0.5) * 10;
+      }
     }
     pointsRef.current.geometry.attributes.position.needsUpdate = true;
   });
@@ -256,28 +401,215 @@ function SandParticles() {
     <points ref={pointsRef}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-aSize" count={count} array={sizes} itemSize={1} />
+        <bufferAttribute attach="attributes-aOpacity" count={count} array={opacities} itemSize={1} />
+        <bufferAttribute attach="attributes-aColor" count={count} array={colors} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial
-        size={0.035}
-        color="#c4a265"
-        transparent
-        opacity={0.5}
-        sizeAttenuation
-        depthWrite={false}
-      />
+      <primitive object={particleMaterial} />
     </points>
   );
 }
 
-/* ──────────────── SANDWORM MESH ──────────────── */
+/* ──────────────── ENHANCED SAND TRAIL ──────────────── */
+function SandTrail() {
+  const pointsRef = useRef<THREE.Points>(null!);
+  const count = 400; // More trail particles
+
+  const [positions, trailSizes, trailOpacities] = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    const sz = new Float32Array(count);
+    const op = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      const t = i / count;
+      pos[i * 3] = (t - 0.5) * 24;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 2.0 - 0.8;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 2.5;
+      // Larger near head, smaller at tail
+      sz[i] = Math.max(0.5, (1.0 - t) * 4.0 + Math.random() * 1.5);
+      op[i] = (1.0 - t * 0.7) * (Math.random() * 0.3 + 0.2);
+    }
+    return [pos, sz, op];
+  }, []);
+
+  const trailMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        uniform float uTime;
+        attribute float aSize;
+        attribute float aOpacity;
+        varying float vAlpha;
+        varying float vDist;
+        void main() {
+          vec3 pos = position;
+          pos.y -= 0.6;
+          pos.y += sin(pos.x * 0.4 + uTime * 0.7) * 0.15;
+          pos.z += cos(pos.x * 0.25 + uTime * 0.4) * 0.12;
+          vAlpha = smoothstep(-12.0, 0.0, pos.x) * smoothstep(12.0, 0.0, pos.x) * aOpacity;
+          vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+          vDist = -mvPos.z;
+          gl_PointSize = aSize * (180.0 / -mvPos.z);
+          gl_PointSize = clamp(gl_PointSize, 0.5, 10.0);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying float vAlpha;
+        varying float vDist;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.1, d) * vAlpha;
+          vec3 col = mix(vec3(0.6, 0.42, 0.2), vec3(0.85, 0.68, 0.4), smoothstep(15.0, 5.0, vDist));
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+  }, []);
+
+  useFrame((state) => {
+    trailMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-aSize" count={count} array={trailSizes} itemSize={1} />
+        <bufferAttribute attach="attributes-aOpacity" count={count} array={trailOpacities} itemSize={1} />
+      </bufferGeometry>
+      <primitive object={trailMaterial} />
+    </points>
+  );
+}
+
+/* ──────────────── AMBIENT SAND CLOUD ──────────────── */
+function AmbientSandCloud() {
+  const pointsRef = useRef<THREE.Points>(null!);
+  const count = 300;
+
+  const [positions, cloudSizes] = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    const sz = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      // Large, diffuse cloud — very spread out
+      pos[i * 3] = (Math.random() - 0.5) * 40;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 15 - 3;
+      sz[i] = Math.random() * 0.12 + 0.04;
+    }
+    return [pos, sz];
+  }, []);
+
+  const cloudMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        uniform float uTime;
+        attribute float aSize;
+        varying float vAlpha;
+        void main() {
+          vec3 pos = position;
+          pos.x += sin(uTime * 0.1 + position.y * 0.05) * 0.5;
+          pos.y += cos(uTime * 0.08 + position.x * 0.03) * 0.3;
+          vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+          float dist = -mvPos.z;
+          vAlpha = smoothstep(35.0, 15.0, dist) * smoothstep(2.0, 6.0, dist) * 0.15;
+          gl_PointSize = aSize * (300.0 / -mvPos.z);
+          gl_PointSize = clamp(gl_PointSize, 1.0, 20.0);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying float vAlpha;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.0, d) * vAlpha;
+          vec3 col = vec3(0.65, 0.5, 0.3);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+  }, []);
+
+  useFrame((state) => {
+    cloudMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-aSize" count={count} array={cloudSizes} itemSize={1} />
+      </bufferGeometry>
+      <primitive object={cloudMaterial} />
+    </points>
+  );
+}
+
+/* ──────────────── SANDWORM MESH (with grow animation) ──────────────── */
 function SandwormMesh() {
   const groupRef = useRef<THREE.Group>(null!);
   const materialRef = useRef<THREE.ShaderMaterial>(null!);
+  const scaleRef = useRef(0.05); // start very small
 
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
-    uWormSpeed: { value: 1.8 },
+    uWormSpeed: { value: 1.2 },
+    uScale: { value: 0.05 },
   }), []);
+
+  useEffect(() => {
+    // Dramatic grow animation: tiny → full size over ~3 seconds
+    const startTime = performance.now();
+    const duration = 3000; // ms — longer for more dramatic reveal
+    const targetScale = 1.35; // slightly bigger than before
+
+    const animate = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1.0);
+
+      // Custom ease: slow start, explosive middle, settle at end
+      let ease: number;
+      if (progress < 0.3) {
+        // Slow emergence from sand
+        const t = progress / 0.3;
+        ease = t * t * 0.15; // 0 → 0.15
+      } else if (progress < 0.7) {
+        // Explosive growth
+        const t = (progress - 0.3) / 0.4;
+        ease = 0.15 + t * t * 0.85; // 0.15 → 1.0
+      } else {
+        // Settle with slight overshoot
+        const t = (progress - 0.7) / 0.3;
+        ease = 1.0 + Math.sin(t * Math.PI) * 0.05; // 1.0 → 1.05 → 1.0
+      }
+
+      const currentScale = 0.05 + (targetScale - 0.05) * ease;
+
+      scaleRef.current = currentScale;
+      if (materialRef.current) {
+        materialRef.current.uniforms.uScale.value = currentScale;
+      }
+      if (groupRef.current) {
+        groupRef.current.scale.setScalar(currentScale);
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    // Delay start to sync with preloader finish
+    const timeout = setTimeout(() => requestAnimationFrame(animate), 1800);
+    return () => clearTimeout(timeout);
+  }, []);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -285,18 +617,18 @@ function SandwormMesh() {
       materialRef.current.uniforms.uTime.value = t;
     }
     if (groupRef.current) {
-      // Gentle bob
-      groupRef.current.position.y = Math.sin(t * 0.4) * 0.15;
-      // Very slow overall rotation so it's seen from different angles
-      groupRef.current.rotation.y = Math.sin(t * 0.15) * 0.2;
-      groupRef.current.rotation.x = Math.sin(t * 0.1) * 0.05;
+      // Very subtle bob — barely noticeable for solid feel
+      groupRef.current.position.y = Math.sin(t * 0.25) * 0.08;
+      // Extremely slow rotation
+      groupRef.current.rotation.y = Math.sin(t * 0.08) * 0.1;
+      groupRef.current.rotation.x = Math.sin(t * 0.06) * 0.03;
     }
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} scale={0.05}>
       <mesh>
-        <cylinderGeometry args={[1, 1, 18, 32, 200, true]} />
+        <cylinderGeometry args={[1, 1, 24, 56, 350, true]} />
         <shaderMaterial
           ref={materialRef}
           vertexShader={wormVertexShader}
@@ -309,25 +641,63 @@ function SandwormMesh() {
   );
 }
 
+/* ──────────────── SCENE CONTROLLER ──────────────── */
+function SceneController({ onScaleUpdate }: { onScaleUpdate: (s: number) => void }) {
+  const frameCount = useRef(0);
+  useFrame(() => {
+    frameCount.current++;
+    const elapsed = performance.now() - 1800;
+    const duration = 3000;
+    const progress = Math.min(Math.max(elapsed / duration, 0), 1);
+
+    let ease: number;
+    if (progress < 0.3) {
+      const t = progress / 0.3;
+      ease = t * t * 0.15;
+    } else if (progress < 0.7) {
+      const t = (progress - 0.3) / 0.4;
+      ease = 0.15 + t * t * 0.85;
+    } else {
+      const t = (progress - 0.7) / 0.3;
+      ease = 1.0 + Math.sin(t * Math.PI) * 0.05;
+    }
+
+    const scale = 0.05 + (1.35 - 0.05) * ease;
+    if (frameCount.current % 10 === 0) {
+      onScaleUpdate(scale);
+    }
+  });
+  return null;
+}
+
 /* ──────────────── MAIN HERO SCENE ──────────────── */
 export function Scene3D() {
+  const [wormScale, setWormScale] = useState(0.05);
+
   return (
     <Canvas
-      camera={{ position: [0, 3, 10], fov: 55 }}
+      camera={{ position: [0, 2.5, 13], fov: 50 }}
       style={{ background: 'transparent' }}
       gl={{ alpha: true, antialias: true }}
     >
       {/* Fog for depth */}
-      <fog attach="fog" args={['#000000', 8, 25]} />
+      <fog attach="fog" args={['#000000', 12, 35]} />
 
-      {/* Desert-like warm lighting */}
-      <ambientLight intensity={0.25} color="#c4a265" />
-      <directionalLight position={[5, 8, 5]} intensity={0.8} color="#ffd4a0" />
-      <pointLight position={[-3, 2, 4]} intensity={0.6} color="#ff8844" distance={15} />
-      <pointLight position={[5, -1, 3]} intensity={0.4} color="#aa6633" distance={12} />
+      {/* Desert lighting — warm, dramatic, strong for solid look */}
+      <ambientLight intensity={0.4} color="#c4a265" />
+      <directionalLight position={[5, 8, 5]} intensity={1.2} color="#ffd4a0" />
+      <pointLight position={[-4, 2, 4]} intensity={0.8} color="#ff8844" distance={20} />
+      <pointLight position={[6, -1, 3]} intensity={0.6} color="#aa6633" distance={16} />
+      {/* Rim light from behind for silhouette edge */}
+      <pointLight position={[0, 3, -8]} intensity={0.5} color="#88aacc" distance={22} />
+      {/* Extra warm fill from front-below */}
+      <pointLight position={[0, -3, 8]} intensity={0.3} color="#c49040" distance={18} />
 
+      <SceneController onScaleUpdate={setWormScale} />
       <SandwormMesh />
-      <SandParticles />
+      <SandTrail />
+      <AmbientSandCloud />
+      <SandParticles wormScale={wormScale} />
     </Canvas>
   );
 }
