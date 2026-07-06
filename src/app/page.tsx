@@ -272,7 +272,7 @@ function HeroSection() {
 
           {/* RIGHT COLUMN - Name + Links */}
           <div className="hero-right opacity-0 text-center lg:text-right">
-            <h1 className="hero-name text-[clamp(3rem,7vw,6.5rem)] font-extrabold leading-[0.85] tracking-tighter pointer-events-none select-none" style={{ opacity: 0, fontFamily: 'var(--font-syne)' }}>
+            <h1 className="hero-name text-[clamp(3rem,7vw,6.5rem)] font-extrabold leading-[0.85] tracking-tighter pointer-events-none select-none" style={{ opacity: 0, fontFamily: 'var(--font-inter)' }}>
               <span className="gradient-text-dune">ADITYA</span>
             </h1>
             <p className="mt-6 text-sm leading-relaxed text-white/40 md:text-base max-w-sm mx-auto lg:ml-auto lg:mr-0">
@@ -679,7 +679,7 @@ function ContactSection() {
           initial={{ opacity: 0, y: 60 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 1, ease: 'power4.out' }}
-          className="text-[clamp(3rem,8vw,8rem)] font-extrabold leading-[0.9] tracking-tighter text-white uppercase" style={{ fontFamily: 'var(--font-syne)' }}
+          className="text-[clamp(3rem,8vw,8rem)] font-extrabold leading-[0.9] tracking-tighter text-white uppercase" style={{ fontFamily: 'var(--font-inter)' }}
         >
           LET&apos;S TALK
         </motion.h2>
@@ -736,7 +736,7 @@ function Footer() {
             <div className="flex items-center gap-3 mb-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold text-lg">A</div>
               <div>
-                <h3 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-syne)' }}>ADITYA</h3>
+                <h3 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-inter)' }}>ADITYA</h3>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">Front-End Developer & Designer</p>
               </div>
             </div>
