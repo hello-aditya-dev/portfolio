@@ -212,6 +212,81 @@ function MobileNav() {
 /* ──────────────── HERO SECTION ──────────────── */
 function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Robust video playback — auto-recover from stalls, pauses, errors
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+
+    const forcePlay = () => {
+      const p = video.play();
+      if (p) p.catch(() => {});
+    };
+
+    const handleCanPlay = () => { retryCount = 0; forcePlay(); };
+    const handleStalled = () => {
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        // Reload from current position to unstick
+        const t = video.currentTime;
+        video.load();
+        video.addEventListener('canplay', () => { video.currentTime = t; forcePlay(); }, { once: true });
+      }
+    };
+    const handleWaiting = () => {
+      // Browser is buffering — set a safety timeout
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => {
+        if (video.paused) forcePlay();
+      }, 3000);
+    };
+    const handlePlaying = () => {
+      if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      retryCount = 0;
+    };
+    const handleEnded = () => { video.currentTime = 0; forcePlay(); };
+    const handleError = () => {
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        setTimeout(() => { video.load(); }, 1000 * retryCount);
+      }
+    };
+    const handlePause = () => {
+      // Auto-resume if paused unexpectedly (not by user)
+      if (!video.ended && retryCount < MAX_RETRIES) {
+        setTimeout(() => { if (video.paused && !video.ended) forcePlay(); }, 100);
+      }
+    };
+    const handleVisibility = () => {
+      if (!document.hidden && video.paused && !video.ended) forcePlay();
+    };
+
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('stalled', handleStalled);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('error', handleError);
+    video.addEventListener('pause', handlePause);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('stalled', handleStalled);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('pause', handlePause);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -240,6 +315,7 @@ function HeroSection() {
     <section ref={heroRef} id="hero" className="relative flex min-h-screen items-center overflow-hidden">
       {/* Full-screen black hole video background */}
       <video
+        ref={videoRef}
         className="hero-3d absolute inset-0 z-0 h-full w-full object-cover opacity-0"
         src="/blackhole.mp4"
         autoPlay
