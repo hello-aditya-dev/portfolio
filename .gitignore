@@ -51,4 +51,15 @@ prompt
 
 server.log
 # Skills directory
-/skills/
+/skills/upload/
+*.png
+*.json
+worklog.md
+scripts/
+reference-*
+current-*
+verify-*
+v2-*
+skills/
+.zscripts/
+.next/
