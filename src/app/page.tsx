@@ -358,7 +358,7 @@ function HeroSection() {
               Focused on <span className="text-amber-300/80">immersive experiences</span>, working remotely from India. Turning ideas into interactive reality.
             </p>
             <div className="mt-6 flex flex-col gap-3 items-center lg:items-end">
-              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-amber-300/80 transition-colors">GitHub ↗</a>
+              <a href="https://github.com/hello-aditya-dev" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-amber-300/80 transition-colors">GitHub ↗</a>
               <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/30 hover:text-amber-300/80 transition-colors">Email ↗</a>
             </div>
           </div>
@@ -710,13 +710,13 @@ function ContactSection() {
             Send me an email
           </a>
           <span className="text-white/20 font-mono text-sm">OR</span>
-          <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-sm uppercase tracking-[0.1em] text-white/70 underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-colors">
+          <a href="https://github.com/hello-aditya-dev" target="_blank" rel="noopener noreferrer" className="font-mono text-sm uppercase tracking-[0.1em] text-white/70 underline underline-offset-4 decoration-white/20 hover:decoration-white/60 transition-colors">
             Book a call
           </a>
         </motion.div>
 
         <motion.div initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ duration: 0.6, delay: 0.7 }} className="mt-12 flex items-center gap-8">
-          <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-orange-300/70 transition-colors">
+          <a href="https://github.com/hello-aditya-dev" target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-orange-300/70 transition-colors">
             GitHub ↗
           </a>
           <a href="mailto:hi.aditya.dev@gmail.com" className="font-mono text-[11px] uppercase tracking-wider text-white/25 hover:text-orange-300/70 transition-colors">
@@ -786,7 +786,7 @@ function Footer() {
             {/* Social links */}
             <div className="flex items-center gap-1">
               <a
-                href="https://github.com/witejackel-eng"
+                href="https://github.com/hello-aditya-dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-2 rounded-lg px-3.5 py-2 transition-colors hover:bg-white/[0.04]"
