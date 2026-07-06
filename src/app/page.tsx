@@ -441,15 +441,18 @@ function AboutSection() {
 /* ──────────────── PROJECT CARD ──────────────── */
 function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
+  const isInView = useInView(ref, { once: true, margin: '-40px' });
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 15 });
-  const springY = useSpring(mouseY, { stiffness: 150, damping: 15 });
+  const springX = useSpring(mouseX, { stiffness: 120, damping: 12 });
+  const springY = useSpring(mouseY, { stiffness: 120, damping: 12 });
 
-  // Tilt effect
-  const rotateX = useSpring(0, { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(0, { stiffness: 200, damping: 20 });
+  // Strong 3D tilt
+  const rotateX = useSpring(0, { stiffness: 180, damping: 18 });
+  const rotateY = useSpring(0, { stiffness: 180, damping: 18 });
+
+  // 3D lift on hover (z-axis feel)
+  const cardShadow = useSpring(0, { stiffness: 200, damping: 25 });
 
   const handleMouse = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -459,42 +462,58 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
     mouseY.set(y);
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    rotateX.set(((y - centerY) / centerY) * -3);
-    rotateY.set(((x - centerX) / centerX) * 3);
+    // Aggressive tilt for strong 3D feel
+    rotateX.set(((y - centerY) / centerY) * -8);
+    rotateY.set(((x - centerX) / centerX) * 8);
+    cardShadow.set(1);
   };
 
   const handleMouseLeave = () => {
     rotateX.set(0);
     rotateY.set(0);
+    cardShadow.set(0);
   };
 
-  // Staggered animation direction
-  const fromX = index % 2 === 0 ? -50 : 50;
+  // Grid position-based animation
+  const gridRow = Math.floor(index / 2);
+  const gridCol = index % 2;
+  const fromX = gridCol === 0 ? -40 : 40;
+  const fromY = gridRow === 0 ? 30 : -30;
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, x: fromX, y: 30 }}
-      animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
-      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: index * 0.15 }}
+      initial={{ opacity: 0, x: fromX, y: fromY, rotateY: fromX * 0.3, scale: 0.92 }}
+      animate={isInView ? { opacity: 1, x: 0, y: 0, rotateY: 0, scale: 1 } : {}}
+      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: index * 0.12 }}
     >
       <a href={project.link} target="_blank" rel="noopener noreferrer" className="group block">
         <motion.div
-          className="card-glow-vibrant relative overflow-hidden rounded-2xl border border-white/[0.08] transition-all duration-500"
+          className="card-glow-vibrant relative overflow-hidden rounded-xl border border-white/[0.07] transition-all duration-500"
           style={{
             '--mouse-x': `${springX.get()}px`,
             '--mouse-y': `${springY.get()}px`,
             '--card-color': project.accentGlow,
             rotateX,
             rotateY,
-            transformPerspective: 1200,
-            background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)`,
+            transformPerspective: 800,
+            transformStyle: 'preserve-3d',
+            background: `linear-gradient(145deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.005) 100%)`,
+            boxShadow: cardShadow.get() > 0.5
+              ? `0 25px 60px -12px rgba(0,0,0,0.6), 0 0 40px ${project.accentGlow}10`
+              : `0 8px 25px -5px rgba(0,0,0,0.3)`,
           } as React.CSSProperties}
           onMouseMove={handleMouse}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Hover gradient background */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" style={{ background: project.abstractBg }} />
+          {/* 3D depth layer — colored inner glow that follows tilt */}
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at ${50 + (springY.get() / 3)}% ${50 + (springX.get() / 3)}%, ${project.accentGlow}18, transparent 55%)`,
+              transform: 'translateZ(10px)',
+            }}
+          />
 
           {/* Animated accent line at top */}
           <motion.div
@@ -503,132 +522,117 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[0]; index:
             initial={{ width: '0%' }}
             whileInView={{ width: '100%' }}
             viewport={{ once: true }}
-            transition={{ duration: 1.5, delay: 0.5 + index * 0.2, ease: 'easeInOut' }}
+            transition={{ duration: 1.2, delay: 0.4 + index * 0.15, ease: 'easeInOut' }}
           />
 
-          {/* ═══ ILLUSTRATION SECTION — Full Width Screenshot ═══ */}
+          {/* ═══ ILLUSTRATION — Screenshot ═══ */}
           <div className="relative z-10">
-            {/* Browser chrome bar */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.05] bg-white/[0.02]">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: project.color, opacity: 0.9 }} />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+            {/* Compact browser chrome */}
+            <div className="flex items-center gap-2 px-3.5 py-2 border-b border-white/[0.04] bg-white/[0.015]">
+              <div className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full" style={{ background: project.color, opacity: 0.85 }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/8" />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/8" />
               </div>
-              {/* URL bar */}
               <div className="flex-1 flex justify-center">
-                <div className="flex items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.03] px-4 py-1.5 max-w-md w-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 flex-shrink-0"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-                  <span className="font-mono text-[10px] text-white/20 truncate">{project.link.replace('https://', '').replace('/', '')}</span>
+                <div className="flex items-center gap-1.5 rounded border border-white/[0.05] bg-white/[0.02] px-3 py-1 max-w-[200px] w-full">
+                  <span className="font-mono text-[8px] text-white/15 truncate">{project.link.replace('https://', '').replace('/', '')}</span>
                 </div>
               </div>
-              {/* Project number badge */}
-              <div className="flex-shrink-0 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1">
-                <span className="font-mono text-[10px] tracking-wider" style={{ color: project.color, opacity: 0.7 }}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-              </div>
+              <span className="font-mono text-[9px] tracking-wider" style={{ color: project.color, opacity: 0.5 }}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
             </div>
 
-            {/* Screenshot area */}
-            <motion.div
-              className="relative overflow-hidden bg-[#0a0a0a]"
-              style={{ height: '280px' }}
-              whileHover={{ scale: 1.01 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            >
+            {/* Screenshot */}
+            <div className="relative overflow-hidden bg-[#080808]" style={{ height: '180px' }}>
               <img
                 src={project.image}
                 alt={project.title}
-                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.05]"
                 loading="lazy"
               />
-              {/* Bottom gradient fade into content */}
-              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/60 to-transparent" />
-              {/* Side vignette for depth */}
-              <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 120px 20px rgba(0,0,0,0.4)` }} />
-              {/* Colored glow on hover */}
-              <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 50% 80%, ${project.accentGlow}15, transparent 60%)` }} />
-              </div>
-              {/* Category floating badge on image */}
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/50 to-transparent" />
+              <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 80px 15px rgba(0,0,0,0.5)' }} />
+
+              {/* 3D floating category badge */}
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
-                className="absolute top-4 right-4 rounded-full border border-white/[0.1] bg-black/50 backdrop-blur-md px-3 py-1"
+                initial={{ opacity: 0, y: 8, scale: 0.9 }}
+                animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                transition={{ delay: 0.35 + index * 0.1, duration: 0.4 }}
+                className="absolute top-3 right-3 rounded-full border border-white/[0.08] bg-black/60 backdrop-blur-md px-2.5 py-0.5"
+                style={{ transform: 'translateZ(20px)' }}
               >
-                <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/60">{project.category}</span>
+                <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-white/50">{project.category}</span>
               </motion.div>
-            </motion.div>
-          </div>
 
-          {/* ═══ CONTENT SECTION ═══ */}
-          <div className="relative z-10 p-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-              {/* Left — Title + Description */}
-              <div className="flex-1">
-                <motion.h3
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.25 + index * 0.1, duration: 0.6, ease: 'power3.out' }}
-                  className="text-2xl font-bold text-white md:text-[1.7rem] leading-tight group-hover:text-white transition-colors"
-                >
-                  {project.title}
-                </motion.h3>
-                <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.35 + index * 0.1, duration: 0.5 }}
-                  className="mt-3 text-sm leading-relaxed text-white/35 max-w-lg"
-                >
-                  {project.description}
-                </motion.p>
-
-                {/* Tech stack */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                  className="mt-5 flex flex-wrap gap-2"
-                >
-                  {project.tech.map((t, ti) => (
-                    <motion.span
-                      key={t}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                      transition={{ delay: 0.55 + ti * 0.05, duration: 0.3 }}
-                      whileHover={{ scale: 1.05, borderColor: `${project.color}40`, color: project.color }}
-                      className="rounded-md border border-white/[0.08] bg-white/[0.02] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/35 transition-all duration-300"
-                    >
-                      {t}
-                    </motion.span>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Right — CTA + Actions */}
-              <div className="flex flex-row items-center gap-3 md:flex-col md:items-end md:gap-4 flex-shrink-0">
-                {/* Arrow button */}
-                <motion.div
-                  whileHover={{ scale: 1.1, borderColor: `${project.color}50` }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.03] transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/[0.06]"
-                  style={{ '--hover-color': project.color } as React.CSSProperties}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/40 group-hover:text-white/80 transition-colors">
-                    <path d="M7 17L17 7M17 7H7M17 7V17" />
-                  </svg>
-                </motion.div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/25 group-hover:text-white/50 transition-colors duration-300">
-                  View Project
-                </span>
+              {/* 3D hover glow overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 50% 80%, ${project.accentGlow}12, transparent 55%)` }} />
               </div>
             </div>
           </div>
 
-          {/* Bottom accent line */}
-          <div className="relative z-10 h-px bg-white/[0.04]" />
+          {/* ═══ CONTENT ═══ */}
+          <div className="relative z-10 p-5">
+            <h3
+              className="text-lg font-bold text-white leading-tight group-hover:text-white transition-colors"
+              style={{ transform: 'translateZ(15px)' }}
+            >
+              {project.title}
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-white/30 line-clamp-2">
+              {project.description}
+            </p>
+
+            {/* Tech stack row */}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {project.tech.map((t) => (
+                <span
+                  key={t}
+                  className="rounded border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-white/30 transition-all duration-300 group-hover:text-white/50 group-hover:border-white/10"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+
+            {/* Bottom row — arrow CTA */}
+            <div className="mt-4 flex items-center justify-between border-t border-white/[0.04] pt-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-1 w-6 rounded-full transition-all duration-500"
+                  style={{ background: project.color, opacity: 0.4 }}
+                />
+                <div
+                  className="h-1 w-3 rounded-full"
+                  style={{ background: project.color, opacity: 0.15 }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/20 group-hover:text-white/50 transition-colors duration-300">
+                  View
+                </span>
+                <motion.div
+                  whileHover={{ scale: 1.15, x: 2, y: -2 }}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] transition-all duration-300 group-hover:border-white/15 group-hover:bg-white/[0.05]"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 group-hover:text-white/70 transition-colors">
+                    <path d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3D edge highlight — simulates light catching the card edge */}
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            style={{
+              background: `linear-gradient(${135 + (springY.get() || 0) * 0.5}deg, transparent 40%, rgba(255,255,255,0.03) 45%, transparent 50%)`,
+              zIndex: 30,
+            }}
+          />
         </motion.div>
       </a>
     </motion.div>
@@ -643,11 +647,12 @@ function WorkSection() {
         <motion.span initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="mb-4 inline-block font-mono text-[11px] uppercase tracking-[0.3em] text-white/25">
           02 / Selected Work
         </motion.span>
-        <motion.h2 initial={{ opacity: 0, y: 50, skewY: 2 }} whileInView={{ opacity: 1, y: 0, skewY: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1, ease: 'power4.out' }} className="mb-16 text-3xl font-bold tracking-tight text-white md:text-5xl">
+        <motion.h2 initial={{ opacity: 0, y: 50, skewY: 2 }} whileInView={{ opacity: 1, y: 0, skewY: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.1, ease: 'power4.out' }} className="mb-12 text-3xl font-bold tracking-tight text-white md:text-5xl">
           Projects
         </motion.h2>
 
-        <div className="space-y-8">
+        {/* 2×2 Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {PROJECTS.map((project, i) => (
             <ProjectCard key={project.id} project={project} index={i} />
           ))}
