@@ -63,3 +63,5 @@ v2-*
 skills/
 .zscripts/
 .next/
+tool-results/
+*.txt
