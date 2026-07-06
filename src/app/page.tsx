@@ -661,73 +661,96 @@ function Footer() {
   const isInView = useInView(footerRef, { once: true, margin: '-50px' });
 
   return (
-    <footer ref={footerRef} className="px-6 pb-8 pt-0 md:px-12 lg:px-16">
+    <footer ref={footerRef} className="px-6 pb-10 pt-0 md:px-12 lg:px-16">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: 'power4.out' }}
-        className="mx-auto max-w-6xl overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a0a0f] p-8 md:p-12 relative"
+        className="mx-auto max-w-6xl rounded-2xl border border-white/[0.06] bg-[#0c0c10] p-8 md:p-12 relative"
       >
-        {/* Gradient accent border at top */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr]">
-          {/* LEFT - Branding */}
+        <div className="grid gap-10 md:grid-cols-[1fr_auto] md:items-start">
+          {/* LEFT — Branding + Bio + Tech */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-white font-bold text-lg">A</div>
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white font-bold text-lg shadow-[0_0_20px_rgba(251,191,36,0.15)]">A</div>
               <div>
-                <h3 className="text-xl font-light tracking-[0.15em] text-white uppercase" style={{ fontFamily: 'var(--font-inter)' }}>ADITYA</h3>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">Front-End Developer & Designer</p>
+                <h3 className="text-xl font-bold tracking-[0.12em] text-white uppercase leading-tight" style={{ fontFamily: 'var(--font-inter)' }}>ADITYA</h3>
+                <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/35 mt-0.5">Front-End Developer & Designer</p>
               </div>
             </div>
-            <p className="text-sm leading-relaxed text-white/35 max-w-md">
+            <p className="text-[13px] leading-[1.7] text-white/40 max-w-lg">
               Building high-performance digital interfaces with precision engineering and intentional design. Every pixel, every animation, every interaction — crafted with purpose.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {['NEXT.JS', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'GSAP', 'FRAMER MOTION'].map((t) => (
-                <span key={t} className="rounded-full border border-white/[0.06] bg-white/[0.02] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-white/30">
+                <span
+                  key={t}
+                  className="rounded-full border border-white/[0.07] bg-white/[0.03] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-white/30 transition-colors hover:text-white/50 hover:border-white/12 cursor-default"
+                >
                   {t}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* RIGHT - Visual / Info */}
-          <div className="flex flex-col items-center md:items-end gap-6">
-            <div className="relative w-full max-w-xs">
-              <div className="laptop-mockup aspect-video relative">
-                <div className="absolute inset-1.5 rounded bg-[#080808] overflow-hidden flex items-center justify-center relative">
-                  {/* Mini black hole visual */}
-                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                    <div className="h-8 w-8 rounded-full bg-black border border-white/10" />
-                    <div className="absolute h-12 w-12 rounded-full border border-white/[0.06] rotate-45" />
-                    <div className="absolute h-16 w-6 rounded-full bg-gradient-to-r from-transparent via-white/8 to-transparent blur-sm" />
-                  </div>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-white/30 relative z-10">Portfolio Preview</span>
-                </div>
-              </div>
+          {/* RIGHT — Availability + Links */}
+          <div className="flex flex-col items-center md:items-end gap-5">
+            {/* Status badge */}
+            <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-300/80">Available for work</span>
             </div>
-            <div className="flex items-center gap-6 font-mono text-[11px] uppercase tracking-wider text-white/25">
-              <a href="https://github.com/witejackel-eng" target="_blank" rel="noopener noreferrer" className="hover:text-orange-300/70 transition-colors">GitHub</a>
-              <span className="text-white/10">|</span>
-              <a href="mailto:hi.aditya.dev@gmail.com" className="hover:text-orange-300/70 transition-colors">Email</a>
-              <span className="text-white/10">|</span>
-              <span>India</span>
+
+            {/* Social links */}
+            <div className="flex items-center gap-1">
+              <a
+                href="https://github.com/witejackel-eng"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-2 rounded-lg px-3.5 py-2 transition-colors hover:bg-white/[0.04]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-white/30 group-hover:text-white/70 transition-colors">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-white/30 group-hover:text-white/70 transition-colors">GitHub</span>
+              </a>
+              <a
+                href="mailto:hi.aditya.dev@gmail.com"
+                className="group flex items-center gap-2 rounded-lg px-3.5 py-2 transition-colors hover:bg-white/[0.04]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 group-hover:text-white/70 transition-colors">
+                  <rect x="2" y="4" width="20" height="16" rx="3"/>
+                  <path d="M22 7l-10 7L2 7"/>
+                </svg>
+                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-white/30 group-hover:text-white/70 transition-colors">Email</span>
+              </a>
+              <span className="flex items-center gap-2 rounded-lg px-3.5 py-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/20">
+                  <circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m0-10.14l2.83 2.83m4.48 4.48l2.83 2.83"/>
+                </svg>
+                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-white/25">India</span>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/[0.04] pt-6 sm:flex-row">
-          <span className="font-mono text-[11px] text-white/20">
+        {/* Bottom divider + copyright */}
+        <div className="mt-8 border-t border-white/[0.05] pt-5 flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <span className="font-mono text-[10px] tracking-wider text-white/20">
             © {new Date().getFullYear()} ADITYA — Built with Next.js, Three.js, GSAP & Framer Motion
           </span>
           <button
             onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}
-            className="font-mono text-[11px] uppercase tracking-wider text-white/20 hover:text-orange-300/50 transition-colors"
+            className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20 hover:text-white/50 transition-colors flex items-center gap-1.5"
           >
-            Back to top ↑
+            Back to top
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
           </button>
         </div>
       </motion.div>
