@@ -93,11 +93,11 @@ const DISK_FS = `
     float brightness = radialFalloff * spirals * turb * doppler;
     brightness = pow(brightness, 1.4);
 
-    // Color: white-hot → amber → dark red → near-black
-    vec3 c1 = vec3(1.0, 0.97, 0.92);
-    vec3 c2 = vec3(1.0, 0.68, 0.22);
-    vec3 c3 = vec3(0.7, 0.18, 0.06);
-    vec3 c4 = vec3(0.12, 0.03, 0.01);
+    // Color: pure white → light gray → dark gray → near-black
+    vec3 c1 = vec3(1.0, 1.0, 1.0);
+    vec3 c2 = vec3(0.78, 0.78, 0.78);
+    vec3 c3 = vec3(0.35, 0.35, 0.35);
+    vec3 c4 = vec3(0.06, 0.06, 0.06);
 
     vec3 color;
     if(t < 0.15)      color = mix(c1, c2, t / 0.15);
@@ -131,7 +131,7 @@ const PHOTON_FS = `
   void main(){
     float angle = atan(vPos.z, vPos.x);
     float b = 0.82 + 0.18 * sin(angle * 10.0 + uTime * 2.0);
-    vec3 color = vec3(1.0, 0.93, 0.78) * b * 2.0;
+    vec3 color = vec3(1.0, 1.0, 1.0) * b * 2.2;
     gl_FragColor = vec4(color, b * 0.95);
   }
 `;
@@ -155,7 +155,7 @@ const GLOW_FS = `
   varying vec3 vViewDir;
   void main(){
     float fresnel = pow(1.0 - max(dot(vNormal, vViewDir), 0.0), 4.0);
-    vec3 color = vec3(1.0, 0.55, 0.12) * fresnel * 1.2;
+    vec3 color = vec3(0.85, 0.88, 0.95) * fresnel * 1.4;
     float alpha = fresnel * 0.55;
     gl_FragColor = vec4(color, alpha);
   }
@@ -203,9 +203,9 @@ const LENSED_FS = `
     float brightness = innerGlow * turb * spiral * 0.55 * vertFade;
     brightness = pow(brightness, 1.5);
 
-    vec3 c1 = vec3(1.0, 0.88, 0.65);
-    vec3 c2 = vec3(0.9, 0.5, 0.18);
-    vec3 c3 = vec3(0.25, 0.08, 0.02);
+    vec3 c1 = vec3(1.0, 1.0, 1.0);
+    vec3 c2 = vec3(0.65, 0.65, 0.65);
+    vec3 c3 = vec3(0.12, 0.12, 0.12);
 
     vec3 color;
     if(t < 0.3) color = mix(c1, c2, t / 0.3);
@@ -259,9 +259,9 @@ const PARTICLE_FS = `
     float dist = length(gl_PointCoord - 0.5) * 2.0;
     float alpha = 1.0 - smoothstep(0.0, 1.0, dist);
     alpha *= vBrightness;
-    vec3 warmWhite = vec3(1.0, 0.95, 0.88);
-    vec3 amber = vec3(1.0, 0.7, 0.3);
-    vec3 color = mix(amber, warmWhite, vTemp) * vBrightness * 1.3;
+    vec3 bright = vec3(1.0, 1.0, 1.0);
+    vec3 dim = vec3(0.7, 0.7, 0.7);
+    vec3 color = mix(dim, bright, vTemp) * vBrightness * 1.4;
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -308,7 +308,7 @@ const JET_FS = `
     float dist = length(gl_PointCoord - 0.5) * 2.0;
     float alpha = 1.0 - smoothstep(0.0, 1.0, dist);
     alpha *= vJetAlpha;
-    vec3 color = mix(vec3(1.0, 0.85, 0.6), vec3(1.0, 1.0, 0.95), 1.0 - vJetDist);
+    vec3 color = mix(vec3(0.9, 0.9, 0.9), vec3(1.0, 1.0, 1.0), 1.0 - vJetDist);
     gl_FragColor = vec4(color * 1.2, alpha);
   }
 `;

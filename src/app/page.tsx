@@ -247,7 +247,7 @@ function HeroSection() {
       </div>
 
       {/* Cosmic black hole ambient glow */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,140,30,0.05)_0%,rgba(180,80,10,0.025)_30%,transparent_60%)]" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(200,210,255,0.04)_0%,rgba(120,130,160,0.02)_30%,transparent_60%)]" />
 
       {/* Content overlay */}
       <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-16">
