@@ -7,8 +7,6 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // Dynamic imports for Three.js to avoid SSR issues
-const Canvas = dynamic(() => import('@react-three/fiber').then(mod => ({ default: mod.Canvas })), { ssr: false });
-const Scene3D = dynamic(() => import('./Scene3D').then(mod => ({ default: mod.Scene3D })), { ssr: false });
 const Scene3DSmall = dynamic(() => import('./Scene3DSmall').then(mod => ({ default: mod.Scene3DSmall })), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
@@ -239,12 +237,16 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} id="hero" className="relative flex min-h-screen items-center overflow-hidden">
-      {/* Full-width 3D Canvas behind everything */}
-      <div className="hero-3d absolute inset-0 z-0 opacity-0">
-        <Suspense fallback={null}>
-          <Scene3D />
-        </Suspense>
-      </div>
+      {/* Full-screen black hole video background */}
+      <video
+        className="hero-3d absolute inset-0 z-0 h-full w-full object-cover opacity-0"
+        src="/blackhole.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+      />
 
       {/* Cosmic black hole ambient glow */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(200,210,255,0.04)_0%,rgba(120,130,160,0.02)_30%,transparent_60%)]" />
