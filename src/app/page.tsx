@@ -235,9 +235,9 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} id="hero" className="relative grid-bg flex min-h-screen items-center overflow-hidden px-6 md:px-12 lg:px-16">
-      {/* Warm flame ambient glow */}
-      <div className="pointer-events-none absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,106,0,0.08)_0%,rgba(255,69,0,0.03)_40%,transparent_70%)]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,140,0,0.04)_0%,transparent_60%)]" />
+      {/* Warm flame ambient glow - bigger for ferocious flame */}
+      <div className="pointer-events-none absolute top-1/3 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,80,0,0.12)_0%,rgba(255,50,0,0.05)_30%,transparent_65%)]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,100,0,0.06)_0%,transparent_55%)]" />
 
       <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl">
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr] lg:gap-16">
@@ -261,7 +261,7 @@ function HeroSection() {
 
           {/* CENTER - 3D FLAME + NAME */}
           <div className="hero-3d opacity-0 order-1 lg:order-2 flex flex-col items-center relative">
-            <div className="relative h-[350px] w-[300px] md:h-[480px] md:w-[400px] lg:h-[520px] lg:w-[440px]">
+            <div className="relative h-[400px] w-[340px] md:h-[540px] md:w-[460px] lg:h-[600px] lg:w-[500px]">
               <div className="absolute inset-0">
                 <Suspense fallback={null}>
                   <Scene3D />
