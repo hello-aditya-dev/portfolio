@@ -190,7 +190,7 @@
 
 /* Dune sand gradient text */
 .gradient-text-dune {
-  background: linear-gradient(135deg, #ffd4a0 0%, #c4a265 35%, #8b6914 70%, rgba(139,105,20,0.6) 100%);
+  background: linear-gradient(135deg, #fff5e6 0%, #ffaa33 30%, #e67300 65%, rgba(180,70,0,0.6) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

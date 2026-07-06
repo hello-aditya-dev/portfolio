@@ -246,8 +246,8 @@ function HeroSection() {
         </Suspense>
       </div>
 
-      {/* Desert sand ambient glow */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(196,162,101,0.06)_0%,rgba(139,105,20,0.03)_35%,transparent_65%)]" />
+      {/* Cosmic black hole ambient glow */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[900px] w-[1200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,140,30,0.05)_0%,rgba(180,80,10,0.025)_30%,transparent_60%)]" />
 
       {/* Content overlay */}
       <div className="hero-parallax relative z-10 mx-auto w-full max-w-7xl px-6 md:px-12 lg:px-16">
@@ -757,10 +757,11 @@ function Footer() {
             <div className="relative w-full max-w-xs">
               <div className="laptop-mockup aspect-video relative">
                 <div className="absolute inset-1.5 rounded bg-[#050505] overflow-hidden flex items-center justify-center relative">
-                  {/* Mini sandworm silhouette */}
+                  {/* Mini black hole visual */}
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                    <div className="h-8 w-24 rounded-full bg-gradient-to-r from-amber-700/20 via-amber-500/15 to-amber-700/20 blur-sm" />
-                    <div className="absolute h-4 w-16 rounded-full bg-gradient-to-r from-amber-600/10 via-yellow-500/10 to-amber-600/10 blur-xs" />
+                    <div className="h-8 w-8 rounded-full bg-black border border-amber-500/20" />
+                    <div className="absolute h-12 w-12 rounded-full border border-amber-500/10 rotate-45" />
+                    <div className="absolute h-16 w-6 rounded-full bg-gradient-to-r from-transparent via-amber-500/15 to-transparent blur-sm" />
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-wider text-white/15 relative z-10">Portfolio Preview</span>
                 </div>
